@@ -1,0 +1,4 @@
+pandas>=2.2.3
+numpy>=2.2.6
+scipy>=1.15.3  # Opzionale, per l'algoritmo Hungarian
+pytest>=8.3.5  # Per i test
