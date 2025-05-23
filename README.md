@@ -1,162 +1,162 @@
-# Sistema Avanzato di Assegnazione Personaggi
+# BestCharacterAssigner
 
-Un sistema intelligente per l'assegnazione ottimale di personaggi a persone, utilizzando diverse strategie e algoritmi avanzati per massimizzare la soddisfazione globale.
+An intelligent system for optimal character assignment to people, using various advanced strategies and algorithms to maximize global satisfaction.
 
-## 🌟 Caratteristiche Principali
+## 🌟 Key Features
 
-- **Multiple Strategie di Assegnazione**:
-  - Hungarian (ottimizzazione matematica)
-  - Balanced (bilanciamento popolarità)
-  - Priority Fair (priorità equa)
-  - Greedy Smart (greedy intelligente)
-  - Hybrid (combinazione adattiva)
+- **Multiple Assignment Strategies**:
+  - Hungarian (mathematical optimization)
+  - Balanced (popularity balancing)
+  - Priority Fair (equitable priority)
+  - Greedy Smart (intelligent greedy)
+  - Hybrid (adaptive combination)
 
-- **Analisi Avanzata**:
-  - Analisi preventiva dei conflitti
-  - Bilanciamento automatico della popolarità
-  - Espansione intelligente delle preferenze
-  - Suggerimenti per migliorare l'input
+- **Advanced Analysis**:
+  - Preventive conflict analysis
+  - Automatic popularity balancing
+  - Intelligent preference expansion
+  - Input improvement suggestions
 
-- **Supporto Formati Dati**:
-  - CSV formato "wide" (una riga per persona)
-  - CSV formato "long" (una riga per preferenza)
+- **Data Format Support**:
+  - "Wide" CSV format (one row per person)
+  - "Long" CSV format (one row per preference)
 
-- **Report Dettagliati**:
-  - Analisi dei conflitti
-  - Statistiche di assegnazione
-  - Report testuali completi
-  - Valutazione della qualità dell'assegnazione
+- **Detailed Reports**:
+  - Conflict analysis
+  - Assignment statistics
+  - Complete textual reports
+  - Assignment quality evaluation
 
-## 📋 Requisiti
+## 📋 Requirements
 
 ```bash
 python >= 3.8
 pandas
 numpy
-scipy (opzionale, per l'algoritmo Hungarian)
+scipy (optional, for Hungarian algorithm)
 ```
 
-## 🚀 Installazione
+## 🚀 Installation
 
-1. Clona il repository:
+1. Clone the repository:
 ```bash
 git clone [url-repository]
-cd CharAssign
+cd BestCharacterAssigner
 ```
 
-2. Crea un ambiente virtuale e attivalo:
+2. Create and activate a virtual environment:
 ```bash
 python -m venv env
-source env/bin/activate  # Per Linux/MacOS
-# oppure
-.\env\Scripts\activate  # Per Windows
+source env/bin/activate  # For Linux/MacOS
+# or
+.\env\Scripts\activate  # For Windows
 ```
 
-3. Installa le dipendenze:
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-## 💻 Utilizzo
+## 💻 Usage
 
-### Da Linea di Comando
+### Command Line Interface
 
 ```bash
-python advanced_assignment_strategies.py file_preferenze.csv [opzioni]
+python advanced_assignment_strategies.py preference_file.csv [options]
 
-Opzioni:
-  --formato {wide,long}    Formato del CSV (default: wide)
-  --delimiter CHAR         Carattere separatore CSV (default: ,)
-  --strategia STRATEGIA   Strategia da utilizzare (opzionale)
+Options:
+  --format {wide,long}    CSV format (default: wide)
+  --delimiter CHAR        CSV delimiter character (default: ,)
+  --strategy STRATEGY     Strategy to use (optional)
 ```
 
-### Formato dei Dati
+### Data Format
 
-#### Formato "Wide":
+#### "Wide" Format:
 ```csv
-Persona,Pref1,Pref2,Pref3
-Alice,Personaggio1,Personaggio2,Personaggio3
-Bob,Personaggio2,Personaggio3,
+Person,Pref1,Pref2,Pref3
+Alice,Character1,Character2,Character3
+Bob,Character2,Character3,
 ```
 
-#### Formato "Long":
+#### "Long" Format:
 ```csv
-Persona,Personaggio
-Alice,Personaggio1
-Alice,Personaggio2
-Bob,Personaggio2
+Person,Character
+Alice,Character1
+Alice,Character2
+Bob,Character2
 ```
 
-## 🧪 Test
+## 🧪 Testing
 
-Il progetto include una suite completa di test. Per eseguire i test:
+The project includes a comprehensive test suite. To run the tests:
 
 ```bash
 pytest -v test_advanced_assignment_strategies.py
 ```
 
-## 📊 Esempio di Output
+## 📊 Output Example
 
 ```
-=== ANALISI CONFLITTI E RISCHI ===
+=== CONFLICT AND RISK ANALYSIS ===
 
-📊 Statistiche generali:
-   • Persone: 4
-   • Personaggi: 4
-   • Media preferenze per persona: 3.0
+📊 General Statistics:
+   • People: 4
+   • Characters: 4
+   • Average preferences per person: 3.0
 
-🔥 Personaggi più richiesti:
-   • Personaggio2: 3 persone (75.0%)
-   • Personaggio3: 2 persone (50.0%)
+🔥 Most Requested Characters:
+   • Character2: 3 people (75.0%)
+   • Character3: 2 people (50.0%)
 ...
 
-✨ RISULTATI FINALI:
-   • Costo totale: 2
-   • Preferenze soddisfatte: 4/4 (100%)
-   🎉 Risultato ECCELLENTE!
+✨ FINAL RESULTS:
+   • Total cost: 2
+   • Preferences satisfied: 4/4 (100%)
+   🎉 EXCELLENT Result!
 ```
 
-## 🔧 Strategie di Assegnazione
+## 🔧 Assignment Strategies
 
 ### Hungarian
-Utilizza l'algoritmo ungherese (Munkres) per trovare l'assegnazione ottimale minimizzando il costo totale.
+Uses the Hungarian algorithm (Munkres) to find the optimal assignment by minimizing total cost.
 
 ### Balanced
-Bilancia la popolarità dei personaggi per evitare concentrazioni su pochi personaggi popolari.
+Balances character popularity to avoid concentration on a few popular characters.
 
 ### Priority Fair
-Dà priorità alle persone con meno opzioni disponibili per garantire un'assegnazione equa.
+Prioritizes people with fewer available options to ensure fair assignment.
 
 ### Greedy Smart
-Versione migliorata dell'algoritmo greedy che considera l'urgenza e la disponibilità.
+Enhanced version of the greedy algorithm that considers urgency and availability.
 
 ### Hybrid
-Combina diverse strategie e sceglie la migliore basandosi sui risultati.
+Combines different strategies and chooses the best one based on results.
 
-## 📝 Licenza
+## 📝 License
 
-MIT License - Vedi il file LICENSE per i dettagli.
+MIT License - See LICENSE file for details.
 
-## 🤖 Sviluppo con AI
+## 🤖 AI Development
 
-Questo progetto è stato sviluppato con l'assistenza di GitHub Copilot, un sistema di intelligenza artificiale che ha contribuito a:
-- Implementazione degli algoritmi di assegnazione
-- Ottimizzazione del codice
-- Generazione della documentazione
-- Creazione della suite di test
+This project was developed with the assistance of GitHub Copilot, an artificial intelligence system that contributed to:
+- Implementation of assignment algorithms
+- Code optimization
+- Documentation generation
+- Test suite creation
 
-La supervisione umana è stata fondamentale per garantire la correttezza degli algoritmi e la qualità del codice.
+Human supervision was essential to ensure algorithm correctness and code quality.
 
-## 👥 Contribuire
+## 👥 Contributing
 
-1. Fai un fork del progetto
-2. Crea un branch per la tua feature (`git checkout -b feature/AmazingFeature`)
-3. Committa i tuoi cambiamenti (`git commit -m 'Add some AmazingFeature'`)
-4. Pusha sul branch (`git push origin feature/AmazingFeature`)
-5. Apri una Pull Request
+1. Fork the project
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## ✨ Note di Sviluppo
+## ✨ Development Notes
 
-- L'algoritmo Hungarian richiede scipy
-- Le preferenze vengono espanse automaticamente quando necessario
-- Il sistema può gestire più copie dello stesso personaggio se necessario
+- The Hungarian algorithm requires scipy
+- Preferences are automatically expanded when needed
+- The system can handle multiple copies of the same character if necessary
