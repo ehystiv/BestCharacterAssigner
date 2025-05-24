@@ -1,0 +1,7 @@
+- Every code, comments MUST be in english
+- Use descriptive variable and function names
+- Use consistent naming conventions (e.g., camelCase, snake_case)
+- Use appropriate data structures (e.g., lists, dictionaries, sets)
+- Use comments to explain complex logic or important decisions
+- Use type hints for function parameters and return types
+- Use consistent indentation (e.g., 4 spaces)
