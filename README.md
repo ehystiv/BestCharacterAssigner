@@ -1,5 +1,7 @@
 # BestCharacterAssigner
 
+[![Dependencies Status](https://github.com/ehystiv/BestCharacterAssigner/actions/workflows/dependencies.yml/badge.svg)](https://github.com/ehystiv/BestCharacterAssigner/actions/workflows/dependencies.yml)
+
 An intelligent system for optimal character assignment to people, using various advanced strategies and algorithms to maximize global satisfaction.
 
 ## 🌟 Key Features
@@ -40,7 +42,7 @@ scipy (optional, for Hungarian algorithm)
 
 1. Clone the repository:
 ```bash
-git clone [url-repository]
+git clone https://github.com/ehystiv/BestCharacterAssigner.git
 cd BestCharacterAssigner
 ```
 
@@ -61,13 +63,41 @@ pip install -r requirements.txt
 
 ### Command Line Interface
 
-```bash
-python advanced_assignment_strategies.py preference_file.csv [options]
+The program offers three main commands:
 
-Options:
-  --format {wide,long}    CSV format (default: wide)
-  --delimiter CHAR        CSV delimiter character (default: ,)
-  --strategy STRATEGY     Strategy to use (optional)
+```bash
+python main.py [command] [options]
+
+Available commands:
+  assign    Run character assignment
+  test      Run tests
+  evaluate  Evaluate which strategy is the best
+
+Options for 'assign':
+  preference_file        CSV file with preferences
+  --format {wide,long}   CSV format (default: wide)
+  --delimiter CHAR       CSV delimiter (default: ,)
+  --strategy STRATEGY    Strategy to use (optional)
+
+Options for 'test':
+  -v, --verbose         Verbose output
+
+Options for 'evaluate':
+  preference_file        CSV file with preferences
+  --format {wide,long}   CSV format (default: wide)
+  --delimiter CHAR       CSV delimiter (default: ,)
+```
+
+Usage examples:
+```bash
+# Run character assignment
+python main.py assign preferences.csv --format wide --delimiter ,
+
+# Run tests in verbose mode
+python main.py test -v
+
+# Evaluate the best strategy
+python main.py evaluate preferences.csv
 ```
 
 ### Data Format
@@ -92,7 +122,7 @@ Bob,Character2
 The project includes a comprehensive test suite. To run the tests:
 
 ```bash
-pytest -v test_advanced_assignment_strategies.py
+python main.py test -v
 ```
 
 ## 📊 Output Example
@@ -160,3 +190,5 @@ Human supervision was essential to ensure algorithm correctness and code quality
 - The Hungarian algorithm requires scipy
 - Preferences are automatically expanded when needed
 - The system can handle multiple copies of the same character if necessary
+- Dependencies are automatically checked and updated weekly via GitHub Actions
+- Security vulnerabilities in dependencies are automatically detected
