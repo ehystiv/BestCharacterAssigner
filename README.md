@@ -1,6 +1,7 @@
 # BestCharacterAssigner
 
 [![Dependencies Status](https://github.com/ehystiv/BestCharacterAssigner/actions/workflows/dependencies.yml/badge.svg)](https://github.com/ehystiv/BestCharacterAssigner/actions/workflows/dependencies.yml)
+[![Code Coverage](https://github.com/ehystiv/BestCharacterAssigner/blob/main/coverage.svg)](https://github.com/ehystiv/BestCharacterAssigner/actions/workflows/coverage.yml)
 
 An intelligent system for optimal character assignment to people, using various advanced strategies and algorithms to maximize global satisfaction.
 
