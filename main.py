@@ -91,11 +91,11 @@ def main() -> None:
     elif args.command == "assign":
         assign_args = []
         assign_args.append(args.preference_file)
-        if args.format:
+        if args.format != "wide":  # Aggiungi solo se diverso dal default
             assign_args.extend(["--format", args.format])
-        if args.delimiter:
+        if args.delimiter != ",":  # Aggiungi solo se diverso dal default
             assign_args.extend(["--delimiter", args.delimiter])
-        if args.strategy:
+        if args.strategy:  # Strategy è sempre opzionale
             assign_args.extend(["--strategy", args.strategy])
         run_assigner(assign_args)
     elif args.command == "evaluate":
