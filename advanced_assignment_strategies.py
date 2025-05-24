@@ -594,7 +594,7 @@ class AdvancedCharacterAssignment:
     
     def carica_da_csv(self, file_path: str, formato: str = 'wide', delimiter: str = ',') -> None:
         """
-        Carica le preferenze da un file CSV.
+        Carica le preferenze da un file CSV utilizzando CSVHandler.
         
         Args:
             file_path: Percorso del file CSV
@@ -602,59 +602,14 @@ class AdvancedCharacterAssignment:
                     Nel formato 'long' ogni riga è una coppia persona-personaggio.
             delimiter: Carattere separatore del CSV (default: virgola)
         """
-        import csv
-        import pandas as pd
+        from csv_handler import CSVHandler
         
         try:
-            if formato == 'wide':
-                # Format wide: ogni riga è una persona, le colonne sono le preferenze
-                df = pd.read_csv(file_path, delimiter=delimiter)
-                
-                # La prima colonna è il nome della persona
-                persone = df.iloc[:, 0].tolist()
-                
-                # Le altre colonne sono le preferenze
-                self.persone_scelte = {}
-                for i, persona in enumerate(persone):
-                    # Prendi solo le preferenze non nulle
-                    preferenze = [p for p in df.iloc[i, 1:].tolist() if pd.notna(p)]
-                    if preferenze:  # Aggiungi solo se ha almeno una preferenza
-                        self.persone_scelte[persona] = preferenze
-                
-                # Raccogli tutti i personaggi unici
-                self.tutti_personaggi = list(set(
-                    preferenza 
-                    for preferenze in self.persone_scelte.values() 
-                    for preferenza in preferenze
-                ))
-                
-            elif formato == 'long':
-                # Format long: ogni riga è una coppia persona-personaggio
-                df = pd.read_csv(file_path, delimiter=delimiter)
-                
-                if len(df.columns) < 2:
-                    raise ValueError("Il formato 'long' richiede almeno 2 colonne: persona e personaggio")
-                
-                # Converti il formato long in dizionario
-                self.persone_scelte = {}
-                for persona, gruppo in df.groupby(df.columns[0]):
-                    # Prendi la seconda colonna come preferenza
-                    preferenze = gruppo.iloc[:, 1].dropna().tolist()
-                    if preferenze:  # Aggiungi solo se ha almeno una preferenza
-                        self.persone_scelte[persona] = preferenze
-                
-                # Raccogli tutti i personaggi unici
-                self.tutti_personaggi = df.iloc[:, 1].dropna().unique().tolist()
-            
-            else:
-                raise ValueError("Formato non supportato. Usa 'wide' o 'long'")
-            
+            self.persone_scelte, self.tutti_personaggi = CSVHandler.carica_da_csv(
+                file_path, formato, delimiter
+            )
             # Resetta l'analisi dei conflitti
             self.analisi_conflitti = None
-            
-            print(f"✅ Caricamento completato:")
-            print(f"   • {len(self.persone_scelte)} persone caricate")
-            print(f"   • {len(self.tutti_personaggi)} personaggi unici trovati")
             
         except Exception as e:
             print(f"❌ Errore nel caricamento del CSV: {str(e)}")
@@ -793,10 +748,8 @@ class AdvancedCharacterAssignment:
             report.append("• Valutazione: PROBLEMATICA")
         
         return "\n".join(report)
-    
 
-# Esempio di utilizzo avanzato
-if __name__ == "__main__":
+def main():
     import argparse
     
     # Configura il parser degli argomenti
@@ -839,7 +792,8 @@ if __name__ == "__main__":
     
     # Analisi conflitti
     assegnatore.stampa_analisi_conflitti()
-     # Determina la strategia da utilizzare
+    
+    # Determina la strategia da utilizzare
     strategia_da_usare = args.strategia
     if not strategia_da_usare:
         # Confronta strategie e trova la migliore
@@ -862,3 +816,9 @@ if __name__ == "__main__":
     with open(report_file, "w", encoding="utf-8") as f:
         f.write(report)
     print(f"\n✨ Report salvato in: {report_file}")
+    
+    return assegnazione_finale
+
+# Esempio di utilizzo avanzato
+if __name__ == "__main__":
+    main()
