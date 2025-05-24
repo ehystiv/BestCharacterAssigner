@@ -132,7 +132,9 @@ def test_carica_da_csv_long_format():
     try:
         assigner.carica_da_csv(temp_path, formato="long")
 
-        assert len(assigner.persone_scelte) == 2  # Charlie should be excluded (no valid preferences)
+        assert (
+            len(assigner.persone_scelte) == 2
+        )  # Charlie should be excluded (no valid preferences)
         assert len(assigner.tutti_personaggi) == 2
         assert "Alice" in assigner.persone_scelte
         assert "Bob" in assigner.persone_scelte
@@ -177,7 +179,7 @@ def test_assegna_con_strategia(populated_assigner):
 
         # Test completeness
         assert len(assegnazione) == len(populated_assigner.persone_scelte)
-        
+
         # Test uniqueness of assignments
         personaggi_assegnati = list(assegnazione.values())
         assert len(personaggi_assegnati) == len(set(personaggi_assegnati))
@@ -209,8 +211,13 @@ def test_confronta_strategie(populated_assigner):
         # Test assignment result
         assegnazione = risultato["assegnazione"]
         assert len(assegnazione) == len(populated_assigner.persone_scelte)
-        assert all(persona in populated_assigner.persone_scelte for persona in assegnazione)
-        assert all(personaggio in populated_assigner.tutti_personaggi for personaggio in assegnazione.values())
+        assert all(
+            persona in populated_assigner.persone_scelte for persona in assegnazione
+        )
+        assert all(
+            personaggio in populated_assigner.tutti_personaggi
+            for personaggio in assegnazione.values()
+        )
 
         # Test metrics
         assert isinstance(risultato["costo_totale"], (int, float))

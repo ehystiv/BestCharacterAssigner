@@ -20,6 +20,7 @@ from typing import Dict, List, Set
 try:
     from scipy.optimize import linear_sum_assignment
     import numpy as np
+
     SCIPY_AVAILABLE = True
 except ImportError:
     SCIPY_AVAILABLE = False
@@ -130,9 +131,7 @@ class AdvancedCharacterAssignment:
             suggerimenti.append("💡 Consider removing or promoting them")
 
         if len(self.tutti_personaggi) - len(self.persone_scelte) < 2:
-            suggerimenti.append(
-                "⚠️ Few backup characters, consider adding more"
-            )
+            suggerimenti.append("⚠️ Few backup characters, consider adding more")
 
         self.analisi_conflitti = {
             "n_persone": n_persone,
