@@ -12,16 +12,14 @@ Autore: Assistente AI
 Versione: 3.0 - Strategie Avanzate
 """
 
-import numpy as np
-import pandas as pd
-from collections import Counter
 import random
-from typing import Dict, List, Set
+from collections import Counter
 from datetime import datetime
+from typing import Dict, List, Set
 
 try:
     from scipy.optimize import linear_sum_assignment
-
+    import numpy as np
     SCIPY_AVAILABLE = True
 except ImportError:
     SCIPY_AVAILABLE = False
