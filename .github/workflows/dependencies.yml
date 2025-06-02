@@ -32,7 +32,7 @@ jobs:
           # usiamo --key in linea di comando oppure mettiamo l’API Key in env:
           # safety check --key "$SAFETY_API_KEY" -r requirements.txt
           # In alternativa, se l’ENV è definita, basta:
-          safety check -r requirements.txt
+          safety scan -r requirements.txt
 
       - name: Update dependencies
         run: |
