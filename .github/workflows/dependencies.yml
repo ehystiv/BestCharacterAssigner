@@ -3,7 +3,7 @@ name: Dependencies Check
 on:
   schedule:
     - cron: '0 0 * * 1'  # Run every Monday at midnight
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
   push:
     paths:
       - 'requirements.txt'
@@ -13,25 +13,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.8'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pip-tools safety
-      
+
       - name: Check for security vulnerabilities
-        run: safety scan -r requirements.txt
-      
+        env:
+          SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
+        run: |
+          # usiamo --key in linea di comando oppure mettiamo l’API Key in env:
+          # safety check --key "$SAFETY_API_KEY" -r requirements.txt
+          # In alternativa, se l’ENV è definita, basta:
+          safety check -r requirements.txt
+
       - name: Update dependencies
         run: |
           pip-compile --upgrade requirements.txt
-        
+
       - name: Create Pull Request if there are changes
         uses: peter-evans/create-pull-request@v6
         with:
@@ -39,7 +45,7 @@ jobs:
           title: 'chore: update dependencies'
           body: |
             This PR updates the project dependencies to their latest compatible versions.
-            
+
             Changes were made automatically by the Dependencies Check workflow.
           branch: dependencies-update
           delete-branch: true
