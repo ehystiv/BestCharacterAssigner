@@ -36,7 +36,10 @@ jobs:
 
       - name: Update dependencies
         run: |
-          pip-compile --upgrade requirements.txt
+          if [ ! -f requirements.in ]; then
+            cp requirements.txt requirements.in
+          fi
+          pip-compile --upgrade --output-file requirements.txt requirements.in
 
       - name: Create Pull Request if there are changes
         uses: peter-evans/create-pull-request@v6
