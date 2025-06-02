@@ -26,7 +26,7 @@ jobs:
           pip install pip-tools safety
       
       - name: Check for security vulnerabilities
-        run: safety check -r requirements.txt
+        run: safety scan -r requirements.txt
       
       - name: Update dependencies
         run: |
