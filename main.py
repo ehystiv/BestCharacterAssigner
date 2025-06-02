@@ -16,8 +16,63 @@ def run_assigner(args_list: list) -> None:
     """Esegue lo script di assegnazione caratteri."""
     import advanced_assignment_strategies
 
-    sys.argv = ["advanced_assignment_strategies.py"] + args_list
-    advanced_assignment_strategies.main()
+    assegnatore = advanced_assignment_strategies.AdvancedCharacterAssignment()
+
+    try:
+        # Parse arguments
+        import argparse
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("preference_file", help="File CSV con le preferenze")
+        parser.add_argument(
+            "--format",
+            choices=["wide", "long"],
+            default="wide",
+            help="Formato CSV (default: wide)",
+        )
+        parser.add_argument(
+            "--delimiter", default=",", help="Delimitatore CSV (default: ,)"
+        )
+        parser.add_argument(
+            "--strategy",
+            choices=[
+                "hungarian",
+                "balanced",
+                "priority_fair",
+                "greedy_smart",
+                "hybrid",
+            ],
+            help="Strategia da utilizzare",
+        )
+        args = parser.parse_args(args_list)
+
+        # Carica i dati
+        assegnatore.carica_da_csv(
+            args.preference_file, formato=args.format, delimiter=args.delimiter
+        )
+
+        # Analizza e mostra i conflitti
+        assegnatore.stampa_analisi_conflitti()
+
+        # Se è specificata una strategia, usala direttamente
+        if args.strategy:
+            risultato = assegnatore.assegna_con_strategia(args.strategy)
+            print(f"\n✨ Assignments using {args.strategy.upper()} strategy:")
+            for persona, personaggio in risultato.items():
+                print(f"   • {persona} -> {personaggio}")
+        else:
+            # Altrimenti confronta tutte le strategie e usa la migliore
+            print("\n🔍 Comparing strategies to find the best one...\n")
+            risultati = assegnatore.confronta_strategie()
+            migliore = assegnatore.trova_migliore_strategia(risultati)
+            print(f"\n✨ Best strategy is: {migliore.upper()}")
+            risultato = assegnatore.assegna_con_strategia(migliore)
+            print("\nFinal assignments:")
+            for persona, personaggio in risultato.items():
+                print(f"   • {persona} -> {personaggio}")
+    except Exception as e:
+        print(f"❌ Error during assignment: {e}")
+        exit(1)
 
 
 def run_evaluate(args_list: list) -> None:
