@@ -158,8 +158,7 @@ def main():
 
     # Generate all possible combinations of names and surnames
     all_people = [
-        f"{first} {last}"
-        for first, last in itertools.product(first_names, last_names)
+        f"{first} {last}" for first, last in itertools.product(first_names, last_names)
     ]
 
     max_possible_people = len(all_people)
@@ -187,9 +186,7 @@ def main():
     copy_index = 1
     while len(available_pokemon) < needed:
         copy_index += 1
-        available_pokemon.extend(
-            f"{p} #{copy_index}" for p in pokemon
-        )
+        available_pokemon.extend(f"{p} #{copy_index}" for p in pokemon)
 
     # Generate random data
     choice_columns = [f"Choice{i+1}" for i in range(num_choices)]

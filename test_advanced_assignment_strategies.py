@@ -93,7 +93,9 @@ def test_carica_da_csv_wide_format():
     assigner = AdvancedCharacterAssignment()
 
     # Create a temporary CSV file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
         f.write("Person,Pref1,Pref2,Pref3\n")
         f.write("Alice,Character1,Character2,Character3\n")
         f.write("Bob,Character2,Character3,\n")
@@ -121,7 +123,9 @@ def test_carica_da_csv_long_format():
     assigner = AdvancedCharacterAssignment()
 
     # Create a temporary CSV file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
         f.write("Person,Character\n")
         f.write("Alice,Character1\n")
         f.write("Alice,Character2\n")
@@ -157,7 +161,9 @@ def test_carica_da_csv_file_not_found():
 def test_carica_da_csv_invalid_format():
     """Test that an unsupported format string raises ValueError."""
     assigner = AdvancedCharacterAssignment()
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
         f.write("Person,Pref1\nAlice,Character1\n")
         temp_path = f.name
     try:
@@ -170,7 +176,9 @@ def test_carica_da_csv_invalid_format():
 def test_carica_da_csv_long_format_missing_column():
     """Test that a long-format CSV with only one column raises ValueError."""
     assigner = AdvancedCharacterAssignment()
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
         f.write("Person\nAlice\nBob\n")
         temp_path = f.name
     try:
@@ -202,7 +210,9 @@ def test_espandi_preferenze_intelligente(populated_assigner):
         assert len(preferenze) == len(set(preferenze))
 
 
-@pytest.mark.parametrize("strategia", ["balanced", "priority_fair", "greedy_smart", "hybrid"])
+@pytest.mark.parametrize(
+    "strategia", ["balanced", "priority_fair", "greedy_smart", "hybrid"]
+)
 def test_assegna_con_strategia(populated_assigner, strategia):
     """Test assignment with each strategy individually."""
     assegnazione = populated_assigner.assegna_con_strategia(strategia)
@@ -215,16 +225,18 @@ def test_assegna_con_strategia(populated_assigner, strategia):
 
     # Test uniqueness of assignments
     personaggi_assegnati = list(assegnazione.values())
-    assert len(personaggi_assegnati) == len(set(personaggi_assegnati)), (
-        f"Strategy '{strategia}' assigned the same character to multiple people"
-    )
+    assert len(personaggi_assegnati) == len(
+        set(personaggi_assegnati)
+    ), f"Strategy '{strategia}' assigned the same character to multiple people"
 
     # Test validity of assignments
     for persona, personaggio in assegnazione.items():
-        assert persona in populated_assigner.persone_scelte, f"Unknown person: {persona}"
-        assert personaggio in populated_assigner.tutti_personaggi, (
-            f"Unknown character '{personaggio}' assigned to '{persona}'"
-        )
+        assert (
+            persona in populated_assigner.persone_scelte
+        ), f"Unknown person: {persona}"
+        assert (
+            personaggio in populated_assigner.tutti_personaggi
+        ), f"Unknown character '{personaggio}' assigned to '{persona}'"
 
 
 def test_assegna_con_strategia_hungarian(populated_assigner):

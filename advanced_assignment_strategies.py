@@ -23,20 +23,28 @@ from typing import Dict, List, Set
 logger = logging.getLogger(__name__)
 
 # Thresholds and configuration constants
-CONFLICT_THRESHOLD = 0.6     # Fraction of people requesting a character to flag it as critical
-RISK_CONFLICT_RATIO = 0.8    # Fraction of a person's preferences in conflict to flag as at-risk
-SIMILARITY_THRESHOLD = 0.3   # Minimum Jaccard similarity to suggest a character
-BALANCED_RANDOM_RATIO = 0.7  # Probability of popularity-based choice in balanced expansion
-PREFERENCE_PENALTY = 1000    # Cost penalty when assigned character is not in preferences
+CONFLICT_THRESHOLD = (
+    0.6  # Fraction of people requesting a character to flag it as critical
+)
+RISK_CONFLICT_RATIO = (
+    0.8  # Fraction of a person's preferences in conflict to flag as at-risk
+)
+SIMILARITY_THRESHOLD = 0.3  # Minimum Jaccard similarity to suggest a character
+BALANCED_RANDOM_RATIO = (
+    0.7  # Probability of popularity-based choice in balanced expansion
+)
+PREFERENCE_PENALTY = 1000  # Cost penalty when assigned character is not in preferences
 
 try:
     import numpy as np
+
     NUMPY_AVAILABLE = True
 except ImportError:
     NUMPY_AVAILABLE = False
 
 try:
     from scipy.optimize import linear_sum_assignment
+
     SCIPY_AVAILABLE = True
 except ImportError:
     SCIPY_AVAILABLE = False
@@ -60,11 +68,11 @@ class AdvancedCharacterAssignment:
         self.analisi_conflitti = None
         self.SCIPY_AVAILABLE = SCIPY_AVAILABLE
         self.strategie_disponibili = [
-            "hungarian",      # Classic Hungarian algorithm
-            "balanced",       # Balanced by popularity
+            "hungarian",  # Classic Hungarian algorithm
+            "balanced",  # Balanced by popularity
             "priority_fair",  # Priority to less fortunate
-            "greedy_smart",   # Smart greedy algorithm
-            "hybrid",         # Combination of strategies
+            "greedy_smart",  # Smart greedy algorithm
+            "hybrid",  # Combination of strategies
         ]
 
     def _crea_pool_personaggi(self, n_persone: int) -> Counter:
@@ -165,7 +173,9 @@ class AdvancedCharacterAssignment:
 
         pref_values = list(lunghezze_preferenze.values())
         media_preferenze = (
-            float(np.mean(pref_values)) if NUMPY_AVAILABLE else float(statistics_mean(pref_values))
+            float(np.mean(pref_values))
+            if NUMPY_AVAILABLE
+            else float(statistics_mean(pref_values))
         )
 
         self.analisi_conflitti = {

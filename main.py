@@ -73,7 +73,9 @@ def run_assigner(args_list: list) -> None:
         exit(1)
 
 
-def run_evaluate(preference_file: str, formato: str = "wide", delimiter: str = ",") -> None:
+def run_evaluate(
+    preference_file: str, formato: str = "wide", delimiter: str = ","
+) -> None:
     """Esegue il confronto delle strategie di assegnazione."""
     import advanced_assignment_strategies
 
