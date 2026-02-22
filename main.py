@@ -20,8 +20,6 @@ def run_assigner(args_list: list) -> None:
 
     try:
         # Parse arguments
-        import argparse
-
         parser = argparse.ArgumentParser()
         parser.add_argument("preference_file", help="File CSV con le preferenze")
         parser.add_argument(
@@ -75,16 +73,16 @@ def run_assigner(args_list: list) -> None:
         exit(1)
 
 
-def run_evaluate(args_list: list) -> None:
+def run_evaluate(
+    preference_file: str, formato: str = "wide", delimiter: str = ","
+) -> None:
     """Esegue il confronto delle strategie di assegnazione."""
     import advanced_assignment_strategies
 
     assegnatore = advanced_assignment_strategies.AdvancedCharacterAssignment()
 
     try:
-        assegnatore.carica_da_csv(
-            args_list[0], formato=args_list[1], delimiter=args_list[2]
-        )
+        assegnatore.carica_da_csv(preference_file, formato=formato, delimiter=delimiter)
         assegnatore.analizza_conflitti()
         print("\n🔍 Confronto strategie per trovare la migliore...\n")
         risultati = assegnatore.confronta_strategie()
@@ -154,8 +152,7 @@ def main() -> None:
             assign_args.extend(["--strategy", args.strategy])
         run_assigner(assign_args)
     elif args.command == "evaluate":
-        evaluate_args = [args.preference_file, args.format, args.delimiter]
-        run_evaluate(evaluate_args)
+        run_evaluate(args.preference_file, args.format, args.delimiter)
     else:
         parser.print_help()
 

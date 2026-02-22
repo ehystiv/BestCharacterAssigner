@@ -12,14 +12,38 @@ Author: AI Assistant
 Version: 3.0 - Advanced Strategies
 """
 
+import logging
 import random
 from collections import Counter
 from datetime import datetime
+from statistics import mean as statistics_mean
 from typing import Dict, List, Set
+
+# Configure module-level logger
+logger = logging.getLogger(__name__)
+
+# Thresholds and configuration constants
+CONFLICT_THRESHOLD = (
+    0.6  # Fraction of people requesting a character to flag it as critical
+)
+RISK_CONFLICT_RATIO = (
+    0.8  # Fraction of a person's preferences in conflict to flag as at-risk
+)
+SIMILARITY_THRESHOLD = 0.3  # Minimum Jaccard similarity to suggest a character
+BALANCED_RANDOM_RATIO = (
+    0.7  # Probability of popularity-based choice in balanced expansion
+)
+PREFERENCE_PENALTY = 1000  # Cost penalty when assigned character is not in preferences
+
+try:
+    import numpy as np
+
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
 
 try:
     from scipy.optimize import linear_sum_assignment
-    import numpy as np
 
     SCIPY_AVAILABLE = True
 except ImportError:
@@ -42,12 +66,7 @@ class AdvancedCharacterAssignment:
         self.persone_scelte = {}
         self.tutti_personaggi = []
         self.analisi_conflitti = None
-        try:
-            from scipy.optimize import linear_sum_assignment
-
-            self.SCIPY_AVAILABLE = True
-        except ImportError:
-            self.SCIPY_AVAILABLE = False
+        self.SCIPY_AVAILABLE = SCIPY_AVAILABLE
         self.strategie_disponibili = [
             "hungarian",  # Classic Hungarian algorithm
             "balanced",  # Balanced by popularity
@@ -55,6 +74,25 @@ class AdvancedCharacterAssignment:
             "greedy_smart",  # Smart greedy algorithm
             "hybrid",  # Combination of strategies
         ]
+
+    def _crea_pool_personaggi(self, n_persone: int) -> Counter:
+        """
+        Create a Counter of available character slots, replicating as needed.
+
+        Args:
+            n_persone: Number of people to assign characters to
+
+        Returns:
+            Counter mapping character name to available slots
+        """
+        if not self.tutti_personaggi:
+            raise ValueError("No characters available")
+        n_personaggi = len(self.tutti_personaggi)
+        copie_necessarie = (n_persone + n_personaggi - 1) // n_personaggi
+        pool: List[str] = []
+        for _ in range(copie_necessarie):
+            pool.extend(self.tutti_personaggi)
+        return Counter(pool[:n_persone])
 
     def analizza_conflitti(self) -> Dict:
         """
@@ -85,8 +123,10 @@ class AdvancedCharacterAssignment:
             p: count for p, count in popolarita.items() if count > 1
         }
         personaggi_critici = {
-            p: count for p, count in popolarita.items() if count >= n_persone * 0.6
-        }  # >60% want it
+            p: count
+            for p, count in popolarita.items()
+            if count >= n_persone * CONFLICT_THRESHOLD
+        }
 
         # Persone a rischio (poche preferenze in zone ad alto conflitto)
         persone_rischio = []
@@ -95,9 +135,7 @@ class AdvancedCharacterAssignment:
                 conflitti_personali = sum(
                     1 for p in preferenze if p in personaggi_conflitto
                 )
-                if (
-                    conflitti_personali >= len(preferenze) * 0.8
-                ):  # >80% of their preferences are in conflict
+                if conflitti_personali >= len(preferenze) * RISK_CONFLICT_RATIO:
                     persone_rischio.append(
                         {
                             "persona": persona,
@@ -107,8 +145,8 @@ class AdvancedCharacterAssignment:
                     )
 
         # Underutilized characters
-        personaggi_disponibili = set(self.tutti_personaggi)
-        personaggi_non_richiesti = personaggi_disponibili - set(popolarita.keys())
+        personaggi_set = set(self.tutti_personaggi)
+        personaggi_non_richiesti = personaggi_set - set(popolarita.keys())
 
         # Suggestions
         suggerimenti = []
@@ -133,6 +171,13 @@ class AdvancedCharacterAssignment:
         if len(self.tutti_personaggi) - len(self.persone_scelte) < 2:
             suggerimenti.append("⚠️ Few backup characters, consider adding more")
 
+        pref_values = list(lunghezze_preferenze.values())
+        media_preferenze = (
+            float(np.mean(pref_values))
+            if NUMPY_AVAILABLE
+            else float(statistics_mean(pref_values))
+        )
+
         self.analisi_conflitti = {
             "n_persone": n_persone,
             "n_personaggi": len(self.tutti_personaggi),
@@ -141,7 +186,7 @@ class AdvancedCharacterAssignment:
             "personaggi_critici": personaggi_critici,
             "persone_rischio": persone_rischio,
             "personaggi_non_richiesti": list(personaggi_non_richiesti),
-            "media_preferenze": np.mean(list(lunghezze_preferenze.values())),
+            "media_preferenze": media_preferenze,
             "suggerimenti": suggerimenti,
         }
 
@@ -236,10 +281,10 @@ class AdvancedCharacterAssignment:
 
                 elif metodo == "bilanciato":
                     # Mix of popularity and randomness
-                    if random.random() < 0.7:  # 70% based on popularity
+                    if random.random() < BALANCED_RANDOM_RATIO:
                         popolarita = self.analisi_conflitti["personaggi_popolari"]
                         candidato = min(candidati, key=lambda x: popolarita.get(x, 0))
-                    else:  # 30% random
+                    else:
                         candidato = random.choice(list(candidati))
 
                 else:  # random
@@ -275,7 +320,7 @@ class AdvancedCharacterAssignment:
         # Find characters used by similar people
         personaggi_suggeriti = Counter()
         for altra_persona, similarita in scores_similarita.items():
-            if similarita > 0.3:  # Similarity threshold
+            if similarita > SIMILARITY_THRESHOLD:
                 for personaggio in self.persone_scelte[altra_persona]:
                     if personaggio in candidati:
                         personaggi_suggeriti[personaggio] += similarita
@@ -329,10 +374,14 @@ class AdvancedCharacterAssignment:
     def _assegna_hungarian(self, preferenze: Dict[str, List[str]]) -> Dict[str, str]:
         """Classic Hungarian algorithm."""
         if not SCIPY_AVAILABLE:
+            logger.warning("scipy not available, using smart greedy algorithm...")
             print("⚠️ scipy not available, using smart greedy algorithm...")
             return self._assegna_greedy_intelligente(preferenze)
 
-        import numpy as np
+        if not NUMPY_AVAILABLE:
+            logger.warning("numpy not available, using smart greedy algorithm...")
+            print("⚠️ numpy not available, using smart greedy algorithm...")
+            return self._assegna_greedy_intelligente(preferenze)
 
         persone = list(preferenze.keys())
         personaggi_originali = self.tutti_personaggi
@@ -346,14 +395,10 @@ class AdvancedCharacterAssignment:
         personaggi = []
         for _ in range(copie_necessarie):
             personaggi.extend(personaggi_originali)
-
-        # Cut the excess
         personaggi = personaggi[:n_persone]
 
-        # Cost matrix
-        costi = np.full(
-            (n_persone, n_persone), 1000.0
-        )  # Use same dimension for rows and columns
+        # Cost matrix: np.inf means impossible/undesired assignment
+        costi = np.full((n_persone, n_persone), np.inf)
 
         for i, persona in enumerate(persone):
             scelte = preferenze[persona]
@@ -370,26 +415,17 @@ class AdvancedCharacterAssignment:
 
     def _assegna_bilanciato(self, preferenze: Dict[str, List[str]]) -> Dict[str, str]:
         """Strategy that balances character popularity."""
-        personaggi_originali = self.tutti_personaggi.copy()
         assegnazioni = {}
-        popolarita = Counter()
         n_persone = len(preferenze)
 
-        # Calculate how many copies of each character are needed
-        copie_necessarie = (n_persone + len(personaggi_originali) - 1) // len(
-            personaggi_originali
-        )
-
-        # Create a list of all available characters with copies
-        personaggi_disponibili = []
-        for _ in range(copie_necessarie):
-            personaggi_disponibili.extend(personaggi_originali)
-        personaggi_disponibili = personaggi_disponibili[:n_persone]
-
         # Count popularity
+        popolarita = Counter()
         for scelte in preferenze.values():
             for personaggio in scelte:
                 popolarita[personaggio] += 1
+
+        # Available character pool via Counter (O(1) membership and removal)
+        disponibilita = self._crea_pool_personaggi(n_persone)
 
         # Sort people: those with rarer preferences first
         def rarità_preferenze(persona):
@@ -410,16 +446,19 @@ class AdvancedCharacterAssignment:
             scelte_ordinate = sorted(scelte, key=lambda x: popolarita[x])
 
             for personaggio in scelte_ordinate:
-                if personaggio in personaggi_disponibili:
+                if disponibilita[personaggio] > 0:
                     assegnazioni[persona] = personaggio
-                    personaggi_disponibili.remove(personaggio)
+                    disponibilita[personaggio] -= 1
                     assegnato = True
                     break
 
-            # Emergency assignment
-            if not assegnato and personaggi_disponibili:
-                personaggio = personaggi_disponibili.pop(0)
-                assegnazioni[persona] = personaggio
+            # Emergency assignment from remaining pool
+            if not assegnato:
+                for personaggio, count in disponibilita.items():
+                    if count > 0:
+                        assegnazioni[persona] = personaggio
+                        disponibilita[personaggio] -= 1
+                        break
 
         return assegnazioni
 
@@ -427,26 +466,14 @@ class AdvancedCharacterAssignment:
         self, preferenze: Dict[str, List[str]]
     ) -> Dict[str, str]:
         """Strategy that gives priority to those with fewer options."""
-        personaggi_originali = self.tutti_personaggi.copy()
         assegnazioni = {}
         n_persone = len(preferenze)
 
-        # Calculate how many copies of each character are needed
-        copie_necessarie = (n_persone + len(personaggi_originali) - 1) // len(
-            personaggi_originali
-        )
-
-        # Create pool of available characters with copies
-        personaggi_disponibili = []
-        for _ in range(copie_necessarie):
-            personaggi_disponibili.extend(personaggi_originali)
-        personaggi_disponibili = personaggi_disponibili[:n_persone]
+        # Available character pool via Counter
+        disponibilita = self._crea_pool_personaggi(n_persone)
 
         # Sort by number of preferences (fewer first)
         persone_ordinate = sorted(preferenze.keys(), key=lambda x: len(preferenze[x]))
-
-        # Count availability per character
-        disponibilita = Counter(personaggi_disponibili)
 
         for persona in persone_ordinate:
             scelte = preferenze[persona]
@@ -462,9 +489,8 @@ class AdvancedCharacterAssignment:
 
             # Assegnazione casuale se necessario
             if not assegnato:
-                # Prendi il primo personaggio ancora disponibile
-                for personaggio in personaggi_disponibili:
-                    if disponibilita[personaggio] > 0:
+                for personaggio, count in disponibilita.items():
+                    if count > 0:
                         assegnazioni[persona] = personaggio
                         disponibilita[personaggio] -= 1
                         break
@@ -475,23 +501,11 @@ class AdvancedCharacterAssignment:
         self, preferenze: Dict[str, List[str]]
     ) -> Dict[str, str]:
         """Improved version of the greedy algorithm."""
-        personaggi_originali = self.tutti_personaggi.copy()
         assegnazioni = {}
         n_persone = len(preferenze)
 
-        # Calcola quante copie di ogni personaggio servono
-        copie_necessarie = (n_persone + len(personaggi_originali) - 1) // len(
-            personaggi_originali
-        )
-
-        # Crea pool di personaggi disponibili con copie
-        personaggi_disponibili = []
-        for _ in range(copie_necessarie):
-            personaggi_disponibili.extend(personaggi_originali)
-        personaggi_disponibili = personaggi_disponibili[:n_persone]
-
-        # Conta disponibilità per personaggio
-        disponibilita = Counter(personaggi_disponibili)
+        # Available character pool via Counter
+        disponibilita = self._crea_pool_personaggi(n_persone)
 
         # Calculate "urgency" for each person
         def calcola_urgenza(persona):
@@ -520,8 +534,8 @@ class AdvancedCharacterAssignment:
 
             # Se non ha preferenze disponibili, assegna il primo personaggio disponibile
             if not assegnato:
-                for personaggio in personaggi_disponibili:
-                    if disponibilita[personaggio] > 0:
+                for personaggio, count in disponibilita.items():
+                    if count > 0:
                         assegnazioni[persona_urgente] = personaggio
                         disponibilita[personaggio] -= 1
                         break
@@ -529,22 +543,26 @@ class AdvancedCharacterAssignment:
         return assegnazioni
 
     def _assegna_hybrid(self, preferenze: Dict[str, List[str]]) -> Dict[str, str]:
-        """Hybrid strategy that combines multiple approaches."""
-        # Try multiple strategies and choose the best one
-        strategie = ["hungarian", "balanced", "priority_fair", "greedy_smart"]
+        """Hybrid strategy that tests all sub-strategies and picks the best result."""
+        # Explicit dispatch table mapping strategy names to their methods
+        strategy_map = {
+            "hungarian": self._assegna_hungarian,
+            "balanced": self._assegna_bilanciato,
+            "priority_fair": self._assegna_priorita_equa,
+            "greedy_smart": self._assegna_greedy_intelligente,
+        }
         risultati = []
 
-        for strategia in strategie:
+        for strategia, fn in strategy_map.items():
             if strategia == "hungarian" and not SCIPY_AVAILABLE:
                 continue
 
             try:
-                assegnazione = getattr(self, f'_assegna_{strategia.replace("_", "_")}')(
-                    preferenze
-                )
+                assegnazione = fn(preferenze)
                 punteggio = self._valuta_assegnazione(assegnazione, preferenze)
                 risultati.append((strategia, assegnazione, punteggio))
-            except:
+            except Exception as e:
+                logger.warning(f"Strategy '{strategia}' failed in hybrid: {e}")
                 continue
 
         if not risultati:
@@ -604,7 +622,7 @@ class AdvancedCharacterAssignment:
                 costo_totale = 0
                 preferenze_soddisfatte = 0
                 dettagli = []
-                n_persone = len(self.persone_scelte)  # Total number of people
+                n_persone = len(self.persone_scelte)
 
                 # Verify that there are assignments for all people
                 if len(assegnazione) != n_persone:
@@ -622,7 +640,7 @@ class AdvancedCharacterAssignment:
                             f"{persona}: {personaggio} (pref #{posizione+1})"
                         )
                     else:
-                        costo_totale += 1000
+                        costo_totale += PREFERENCE_PENALTY
                         dettagli.append(f"{persona}: {personaggio} (NON preferito)")
 
                 percentuale = (preferenze_soddisfatte / n_persone) * 100
@@ -643,6 +661,7 @@ class AdvancedCharacterAssignment:
                 print()
 
             except Exception as e:
+                logger.error(f"Strategy '{strategia}' failed during comparison: {e}")
                 print(f"❌ {strategia}: Errore - {e}")
                 print()
 
@@ -716,7 +735,7 @@ class AdvancedCharacterAssignment:
                     f"{emoji} {persona}: {personaggio} (preference #{posizione+1}) {emoji_rischio}"
                 )
             else:
-                costo_totale += 1000
+                costo_totale += PREFERENCE_PENALTY
                 risultati_per_categoria["problematic"].append(
                     f"😞 {persona}: {personaggio} (NOT in preferences) {emoji_rischio}"
                 )

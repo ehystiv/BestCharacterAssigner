@@ -2,12 +2,12 @@
 Test suite for the AdvancedCharacterAssignment class.
 """
 
-import pytest
-import pandas as pd
-import numpy as np
-from advanced_assignment_strategies import AdvancedCharacterAssignment
-import tempfile
 import os
+import tempfile
+
+import pytest
+
+from advanced_assignment_strategies import AdvancedCharacterAssignment
 from typing import Dict, List
 
 
@@ -93,7 +93,9 @@ def test_carica_da_csv_wide_format():
     assigner = AdvancedCharacterAssignment()
 
     # Create a temporary CSV file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
         f.write("Person,Pref1,Pref2,Pref3\n")
         f.write("Alice,Character1,Character2,Character3\n")
         f.write("Bob,Character2,Character3,\n")
@@ -121,7 +123,9 @@ def test_carica_da_csv_long_format():
     assigner = AdvancedCharacterAssignment()
 
     # Create a temporary CSV file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
         f.write("Person,Character\n")
         f.write("Alice,Character1\n")
         f.write("Alice,Character2\n")
@@ -143,6 +147,43 @@ def test_carica_da_csv_long_format():
         assert "Character1" in assigner.persone_scelte["Alice"]
         assert "Character2" in assigner.persone_scelte["Alice"]
         assert "Character2" in assigner.persone_scelte["Bob"]
+    finally:
+        os.unlink(temp_path)
+
+
+def test_carica_da_csv_file_not_found():
+    """Test that loading a non-existent file raises FileNotFoundError."""
+    assigner = AdvancedCharacterAssignment()
+    with pytest.raises(FileNotFoundError):
+        assigner.carica_da_csv("/non/existent/path/file.csv")
+
+
+def test_carica_da_csv_invalid_format():
+    """Test that an unsupported format string raises ValueError."""
+    assigner = AdvancedCharacterAssignment()
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
+        f.write("Person,Pref1\nAlice,Character1\n")
+        temp_path = f.name
+    try:
+        with pytest.raises(ValueError, match="Formato non supportato"):
+            assigner.carica_da_csv(temp_path, formato="invalid_format")
+    finally:
+        os.unlink(temp_path)
+
+
+def test_carica_da_csv_long_format_missing_column():
+    """Test that a long-format CSV with only one column raises ValueError."""
+    assigner = AdvancedCharacterAssignment()
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".csv", delete=False, encoding="utf-8"
+    ) as f:
+        f.write("Person\nAlice\nBob\n")
+        temp_path = f.name
+    try:
+        with pytest.raises(ValueError, match="almeno 2 colonne"):
+            assigner.carica_da_csv(temp_path, formato="long")
     finally:
         os.unlink(temp_path)
 
@@ -169,27 +210,60 @@ def test_espandi_preferenze_intelligente(populated_assigner):
         assert len(preferenze) == len(set(preferenze))
 
 
-def test_assegna_con_strategia(populated_assigner):
-    """Test assignment with different strategies."""
-    for strategia in populated_assigner.strategie_disponibili:
-        if strategia == "hungarian" and not populated_assigner.SCIPY_AVAILABLE:
-            continue
+@pytest.mark.parametrize(
+    "strategia", ["balanced", "priority_fair", "greedy_smart", "hybrid"]
+)
+def test_assegna_con_strategia(populated_assigner, strategia):
+    """Test assignment with each strategy individually."""
+    assegnazione = populated_assigner.assegna_con_strategia(strategia)
 
-        assegnazione = populated_assigner.assegna_con_strategia(strategia)
+    # Test completeness
+    assert len(assegnazione) == len(populated_assigner.persone_scelte), (
+        f"Strategy '{strategia}' returned {len(assegnazione)} assignments "
+        f"for {len(populated_assigner.persone_scelte)} people"
+    )
 
-        # Test completeness
-        assert len(assegnazione) == len(populated_assigner.persone_scelte)
+    # Test uniqueness of assignments
+    personaggi_assegnati = list(assegnazione.values())
+    assert len(personaggi_assegnati) == len(
+        set(personaggi_assegnati)
+    ), f"Strategy '{strategia}' assigned the same character to multiple people"
 
-        # Test uniqueness of assignments
-        personaggi_assegnati = list(assegnazione.values())
-        assert len(personaggi_assegnati) == len(set(personaggi_assegnati))
+    # Test validity of assignments
+    for persona, personaggio in assegnazione.items():
+        assert (
+            persona in populated_assigner.persone_scelte
+        ), f"Unknown person: {persona}"
+        assert (
+            personaggio in populated_assigner.tutti_personaggi
+        ), f"Unknown character '{personaggio}' assigned to '{persona}'"
 
-        # Test validity of assignments
-        for persona, personaggio in assegnazione.items():
-            # Test person exists
-            assert persona in populated_assigner.persone_scelte
-            # Test character exists
-            assert personaggio in populated_assigner.tutti_personaggi
+
+def test_assegna_con_strategia_hungarian(populated_assigner):
+    """Test Hungarian strategy only if scipy is available."""
+    if not populated_assigner.SCIPY_AVAILABLE:
+        pytest.skip("scipy not available")
+
+    assegnazione = populated_assigner.assegna_con_strategia("hungarian")
+
+    assert len(assegnazione) == len(populated_assigner.persone_scelte)
+    personaggi_assegnati = list(assegnazione.values())
+    assert len(personaggi_assegnati) == len(set(personaggi_assegnati))
+    for persona, personaggio in assegnazione.items():
+        assert persona in populated_assigner.persone_scelte
+        assert personaggio in populated_assigner.tutti_personaggi
+
+
+def test_assegna_con_strategia_unknown_raises(populated_assigner):
+    """Test that requesting an unknown strategy raises ValueError."""
+    with pytest.raises(ValueError, match="Strategia sconosciuta"):
+        populated_assigner.assegna_con_strategia("nonexistent_strategy")
+
+
+def test_assegna_con_strategia_no_data(empty_assigner):
+    """Test that assigning with no data loaded raises ValueError."""
+    with pytest.raises(ValueError, match="Nessun dato caricato"):
+        empty_assigner.assegna_con_strategia("greedy_smart")
 
 
 def test_confronta_strategie(populated_assigner):
@@ -268,3 +342,22 @@ def test_genera_report_testuale(populated_assigner):
     # Verify all people are mentioned
     for persona in populated_assigner.persone_scelte:
         assert persona in report
+
+
+def test_crea_pool_personaggi(populated_assigner):
+    """Test the character pool helper creates the correct number of slots."""
+    n_persone = len(populated_assigner.persone_scelte)
+    pool = populated_assigner._crea_pool_personaggi(n_persone)
+
+    # Total slots must equal n_persone
+    assert sum(pool.values()) == n_persone
+
+    # All characters in pool must be valid
+    for personaggio in pool:
+        assert personaggio in populated_assigner.tutti_personaggi
+
+
+def test_crea_pool_personaggi_empty_raises(empty_assigner):
+    """Test that creating a pool with no characters raises ValueError."""
+    with pytest.raises(ValueError, match="No characters available"):
+        empty_assigner._crea_pool_personaggi(5)
