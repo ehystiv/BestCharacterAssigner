@@ -1,8 +1,8 @@
 """
-Gestione dei file CSV per il sistema di assegnazione personaggi.
+CSV file handling for the character assignment system.
 
-Questo modulo si occupa del caricamento e della gestione dei dati CSV
-per il sistema di assegnazione dei personaggi.
+This module handles loading and managing CSV data
+for the character assignment system.
 """
 
 import logging
@@ -15,133 +15,133 @@ logger = logging.getLogger(__name__)
 
 
 class CSVHandler:
-    """Classe per la gestione dei file CSV nel sistema di assegnazione."""
+    """Class for managing CSV files in the assignment system."""
 
     @staticmethod
-    def carica_da_csv(
+    def load_from_csv(
         file_path: str, formato: str = "wide", delimiter: str = ","
     ) -> Tuple[Dict[str, List[str]], List[str]]:
         """
-        Carica le preferenze da un file CSV.
+        Load preferences from a CSV file.
 
         Args:
-            file_path: Percorso del file CSV
-            formato: 'wide' o 'long'. Nel formato 'wide' ogni riga è una persona e le colonne sono le preferenze.
-                    Nel formato 'long' ogni riga è una coppia persona-personaggio.
-            delimiter: Carattere separatore del CSV (default: virgola)
+            file_path: Path to the CSV file
+            formato: 'wide' or 'long'. In 'wide' format each row is a person and columns are preferences.
+                    In 'long' format each row is a person-character pair.
+            delimiter: CSV separator character (default: comma)
 
         Returns:
-            Tuple[Dict[str, List[str]], List[str]]: Tupla contenente:
-                - Dizionario delle preferenze {persona: [preferenze]}
-                - Lista di tutti i personaggi unici
+            Tuple[Dict[str, List[str]], List[str]]: Tuple containing:
+                - Dictionary of preferences {person: [preferences]}
+                - List of all unique characters
 
         Raises:
-            FileNotFoundError: Se il file non esiste.
-            ValueError: Se il formato non è supportato o il file è vuoto.
+            FileNotFoundError: If the file does not exist.
+            ValueError: If the format is not supported or the file is empty.
         """
         path = Path(file_path)
         if not path.exists():
-            raise FileNotFoundError(f"File non trovato: {file_path}")
+            raise FileNotFoundError(f"File not found: {file_path}")
         if not path.is_file():
-            raise ValueError(f"Il percorso non è un file: {file_path}")
+            raise ValueError(f"Path is not a file: {file_path}")
 
         try:
-            persone_scelte = {}
+            people_choices = {}
 
             if formato == "wide":
-                # Format wide: ogni riga è una persona, le colonne sono le preferenze
+                # Wide format: each row is a person, columns are preferences
                 df = pd.read_csv(file_path, sep=delimiter, encoding="utf-8")
 
                 if df.empty:
-                    raise ValueError("Il file CSV è vuoto")
+                    raise ValueError("CSV file is empty")
 
-                # La prima colonna è il nome della persona
-                persone = df.iloc[:, 0].tolist()
+                # First column is the person's name
+                people = df.iloc[:, 0].tolist()
 
-                # Le altre colonne sono le preferenze
-                for i, persona in enumerate(persone):
-                    # Prendi solo le preferenze non nulle
-                    preferenze = [p for p in df.iloc[i, 1:].tolist() if pd.notna(p)]
-                    if preferenze:  # Aggiungi solo se ha almeno una preferenza
-                        persone_scelte[str(persona)] = [str(p) for p in preferenze]
+                # Remaining columns are preferences
+                for i, person in enumerate(people):
+                    # Keep only non-null preferences
+                    preferences = [p for p in df.iloc[i, 1:].tolist() if pd.notna(p)]
+                    if preferences:  # Add only if at least one preference exists
+                        people_choices[str(person)] = [str(p) for p in preferences]
 
             elif formato == "long":
-                # Format long: ogni riga è una coppia persona-personaggio
+                # Long format: each row is a person-character pair
                 df = pd.read_csv(file_path, sep=delimiter, encoding="utf-8")
 
                 if df.empty:
-                    raise ValueError("Il file CSV è vuoto")
+                    raise ValueError("CSV file is empty")
 
                 if len(df.columns) < 2:
                     raise ValueError(
-                        "Il formato 'long' richiede almeno 2 colonne: persona e personaggio"
+                        "The 'long' format requires at least 2 columns: person and character"
                     )
 
-                # Converti il formato long in dizionario
-                for persona, gruppo in df.groupby(df.columns[0]):
-                    # Prendi la seconda colonna come preferenza
-                    preferenze = gruppo.iloc[:, 1].dropna().tolist()
-                    if preferenze:  # Aggiungi solo se ha almeno una preferenza
-                        persone_scelte[str(persona)] = [str(p) for p in preferenze]
+                # Convert long format to dictionary
+                for person, group in df.groupby(df.columns[0]):
+                    # Take the second column as preference
+                    preferences = group.iloc[:, 1].dropna().tolist()
+                    if preferences:  # Add only if at least one preference exists
+                        people_choices[str(person)] = [str(p) for p in preferences]
 
             else:
-                raise ValueError("Formato non supportato. Usa 'wide' o 'long'")
+                raise ValueError("Unsupported format. Use 'wide' or 'long'")
 
-            if not persone_scelte:
+            if not people_choices:
                 raise ValueError(
-                    "Nessuna persona con preferenze valide trovata nel file CSV"
+                    "No person with valid preferences found in the CSV file"
                 )
 
-            # Raccogli tutti i personaggi unici
-            tutti_personaggi = list(
+            # Collect all unique characters
+            all_characters = list(
                 set(
-                    preferenza
-                    for preferenze in persone_scelte.values()
-                    for preferenza in preferenze
+                    preference
+                    for preferences in people_choices.values()
+                    for preference in preferences
                 )
             )
 
-            print(f"✅ Caricamento completato:")
-            print(f"   • {len(persone_scelte)} persone caricate")
-            print(f"   • {len(tutti_personaggi)} personaggi unici trovati")
+            print(f"✅ Loading complete:")
+            print(f"   • {len(people_choices)} people loaded")
+            print(f"   • {len(all_characters)} unique characters found")
 
-            return persone_scelte, tutti_personaggi
+            return people_choices, all_characters
 
         except (FileNotFoundError, ValueError):
             raise
         except Exception as e:
-            logger.error(f"Errore nel caricamento del CSV '{file_path}': {e}")
-            print(f"❌ Errore nel caricamento del CSV: {str(e)}")
+            logger.error(f"Error loading CSV '{file_path}': {e}")
+            print(f"❌ Error loading CSV: {str(e)}")
             raise
 
     @staticmethod
-    def salva_su_csv(
-        assegnazioni: Dict[str, str], file_path: str, delimiter: str = ","
+    def save_to_csv(
+        assignments: Dict[str, str], file_path: str, delimiter: str = ","
     ) -> None:
         """
-        Salva le assegnazioni finali su un file CSV.
+        Save final assignments to a CSV file.
 
         Args:
-            assegnazioni: Dizionario delle assegnazioni {persona: personaggio}
-            file_path: Percorso del file CSV da creare
-            delimiter: Carattere separatore del CSV (default: virgola)
+            assignments: Dictionary of assignments {person: character}
+            file_path: Path to the CSV file to create
+            delimiter: CSV separator character (default: comma)
         """
         try:
-            # Crea un DataFrame con le assegnazioni
+            # Create a DataFrame with the assignments
             df = pd.DataFrame(
                 [
-                    (persona, personaggio)
-                    for persona, personaggio in assegnazioni.items()
+                    (person, character)
+                    for person, character in assignments.items()
                 ],
-                columns=["Persona", "Personaggio Assegnato"],
+                columns=["Person", "Assigned Character"],
             )
 
-            # Salva su CSV con encoding esplicito e separatore corretto
+            # Save to CSV with explicit encoding and correct separator
             df.to_csv(file_path, index=False, sep=delimiter, encoding="utf-8")
 
-            print(f"✅ Assegnazioni salvate in: {file_path}")
+            print(f"✅ Assignments saved to: {file_path}")
 
         except Exception as e:
-            logger.error(f"Errore nel salvataggio del CSV '{file_path}': {e}")
-            print(f"❌ Errore nel salvataggio del CSV: {str(e)}")
+            logger.error(f"Error saving CSV '{file_path}': {e}")
+            print(f"❌ Error saving CSV: {str(e)}")
             raise

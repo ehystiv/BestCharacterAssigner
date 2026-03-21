@@ -7,29 +7,29 @@ from pathlib import Path
 
 
 def run_tests(verbose: bool = False) -> None:
-    """Esegue la suite di test del progetto."""
+    """Run the project test suite."""
     args = ["-v"] if verbose else []
     pytest.main(args + ["test_advanced_assignment_strategies.py"])
 
 
 def run_assigner(args_list: list) -> None:
-    """Esegue lo script di assegnazione caratteri."""
+    """Run the character assignment script."""
     import advanced_assignment_strategies
 
-    assegnatore = advanced_assignment_strategies.AdvancedCharacterAssignment()
+    assigner = advanced_assignment_strategies.AdvancedCharacterAssignment()
 
     try:
         # Parse arguments
         parser = argparse.ArgumentParser()
-        parser.add_argument("preference_file", help="File CSV con le preferenze")
+        parser.add_argument("preference_file", help="CSV file with preferences")
         parser.add_argument(
             "--format",
             choices=["wide", "long"],
             default="wide",
-            help="Formato CSV (default: wide)",
+            help="CSV format (default: wide)",
         )
         parser.add_argument(
-            "--delimiter", default=",", help="Delimitatore CSV (default: ,)"
+            "--delimiter", default=",", help="CSV delimiter (default: ,)"
         )
         parser.add_argument(
             "--strategy",
@@ -40,34 +40,34 @@ def run_assigner(args_list: list) -> None:
                 "greedy_smart",
                 "hybrid",
             ],
-            help="Strategia da utilizzare",
+            help="Strategy to use",
         )
         args = parser.parse_args(args_list)
 
-        # Carica i dati
-        assegnatore.carica_da_csv(
+        # Load data
+        assigner.load_from_csv(
             args.preference_file, formato=args.format, delimiter=args.delimiter
         )
 
-        # Analizza e mostra i conflitti
-        assegnatore.stampa_analisi_conflitti()
+        # Analyze and print conflicts
+        assigner.print_conflict_analysis()
 
-        # Se è specificata una strategia, usala direttamente
+        # If a strategy is specified, use it directly
         if args.strategy:
-            risultato = assegnatore.assegna_con_strategia(args.strategy)
+            result = assigner.assign_with_strategy(args.strategy)
             print(f"\n✨ Assignments using {args.strategy.upper()} strategy:")
-            for persona, personaggio in risultato.items():
-                print(f"   • {persona} -> {personaggio}")
+            for person, character in result.items():
+                print(f"   • {person} -> {character}")
         else:
-            # Altrimenti confronta tutte le strategie e usa la migliore
+            # Otherwise compare all strategies and use the best one
             print("\n🔍 Comparing strategies to find the best one...\n")
-            risultati = assegnatore.confronta_strategie()
-            migliore = assegnatore.trova_migliore_strategia(risultati)
-            print(f"\n✨ Best strategy is: {migliore.upper()}")
-            risultato = assegnatore.assegna_con_strategia(migliore)
+            results = assigner.compare_strategies()
+            best = assigner.find_best_strategy(results)
+            print(f"\n✨ Best strategy is: {best.upper()}")
+            result = assigner.assign_with_strategy(best)
             print("\nFinal assignments:")
-            for persona, personaggio in risultato.items():
-                print(f"   • {persona} -> {personaggio}")
+            for person, character in result.items():
+                print(f"   • {person} -> {character}")
     except Exception as e:
         print(f"❌ Error during assignment: {e}")
         exit(1)
@@ -76,65 +76,65 @@ def run_assigner(args_list: list) -> None:
 def run_evaluate(
     preference_file: str, formato: str = "wide", delimiter: str = ","
 ) -> None:
-    """Esegue il confronto delle strategie di assegnazione."""
+    """Run strategy comparison for assignment."""
     import advanced_assignment_strategies
 
-    assegnatore = advanced_assignment_strategies.AdvancedCharacterAssignment()
+    assigner = advanced_assignment_strategies.AdvancedCharacterAssignment()
 
     try:
-        assegnatore.carica_da_csv(preference_file, formato=formato, delimiter=delimiter)
-        assegnatore.analizza_conflitti()
-        print("\n🔍 Confronto strategie per trovare la migliore...\n")
-        risultati = assegnatore.confronta_strategie()
-        migliore = assegnatore.trova_migliore_strategia(risultati)
-        print(f"\n✨ La strategia migliore è: {migliore.upper()}\n")
+        assigner.load_from_csv(preference_file, formato=formato, delimiter=delimiter)
+        assigner.analyze_conflicts()
+        print("\n🔍 Comparing strategies to find the best one...\n")
+        results = assigner.compare_strategies()
+        best = assigner.find_best_strategy(results)
+        print(f"\n✨ Best strategy is: {best.upper()}\n")
     except Exception as e:
-        print(f"❌ Errore durante la valutazione: {e}")
+        print(f"❌ Error during evaluation: {e}")
         exit(1)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="BestCharacterAssigner - Sistema di assegnazione caratteri"
+        description="BestCharacterAssigner - Character assignment system"
     )
 
-    subparsers = parser.add_subparsers(dest="command", help="Comandi disponibili")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
-    # Subparser per i test
-    test_parser = subparsers.add_parser("test", help="Esegui i test")
+    # Subparser for tests
+    test_parser = subparsers.add_parser("test", help="Run tests")
     test_parser.add_argument(
-        "-v", "--verbose", action="store_true", help="Output verboso"
+        "-v", "--verbose", action="store_true", help="Verbose output"
     )
 
-    # Subparser per l'assegnazione
+    # Subparser for assignment
     assign_parser = subparsers.add_parser(
-        "assign", help="Esegui l'assegnazione caratteri"
+        "assign", help="Run character assignment"
     )
-    assign_parser.add_argument("preference_file", help="File CSV con le preferenze")
+    assign_parser.add_argument("preference_file", help="CSV file with preferences")
     assign_parser.add_argument(
         "--format",
         choices=["wide", "long"],
         default="wide",
-        help="Formato CSV (default: wide)",
+        help="CSV format (default: wide)",
     )
     assign_parser.add_argument(
-        "--delimiter", default=",", help="Delimitatore CSV (default: ,)"
+        "--delimiter", default=",", help="CSV delimiter (default: ,)"
     )
-    assign_parser.add_argument("--strategy", help="Strategia da utilizzare (opzionale)")
+    assign_parser.add_argument("--strategy", help="Strategy to use (optional)")
 
-    # Subparser per la valutazione delle strategie
+    # Subparser for strategy evaluation
     evaluate_parser = subparsers.add_parser(
-        "evaluate", help="Valuta quale sia la strategia migliore"
+        "evaluate", help="Evaluate which strategy is best"
     )
-    evaluate_parser.add_argument("preference_file", help="File CSV con le preferenze")
+    evaluate_parser.add_argument("preference_file", help="CSV file with preferences")
     evaluate_parser.add_argument(
         "--format",
         choices=["wide", "long"],
         default="wide",
-        help="Formato CSV (default: wide)",
+        help="CSV format (default: wide)",
     )
     evaluate_parser.add_argument(
-        "--delimiter", default=",", help="Delimitatore CSV (default: ,)"
+        "--delimiter", default=",", help="CSV delimiter (default: ,)"
     )
 
     args = parser.parse_args()
@@ -144,11 +144,11 @@ def main() -> None:
     elif args.command == "assign":
         assign_args = []
         assign_args.append(args.preference_file)
-        if args.format != "wide":  # Aggiungi solo se diverso dal default
+        if args.format != "wide":  # Add only if different from default
             assign_args.extend(["--format", args.format])
-        if args.delimiter != ",":  # Aggiungi solo se diverso dal default
+        if args.delimiter != ",":  # Add only if different from default
             assign_args.extend(["--delimiter", args.delimiter])
-        if args.strategy:  # Strategy è sempre opzionale
+        if args.strategy:  # Strategy is always optional
             assign_args.extend(["--strategy", args.strategy])
         run_assigner(assign_args)
     elif args.command == "evaluate":

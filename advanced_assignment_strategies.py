@@ -63,611 +63,612 @@ class AdvancedCharacterAssignment:
     """
 
     def __init__(self):
-        self.persone_scelte = {}
-        self.tutti_personaggi = []
-        self.analisi_conflitti = None
+        self.people_choices = {}
+        self.all_characters = []
+        self.conflict_analysis = None
         self.SCIPY_AVAILABLE = SCIPY_AVAILABLE
-        self.strategie_disponibili = [
-            "hungarian",  # Classic Hungarian algorithm
-            "balanced",  # Balanced by popularity
+        self.available_strategies = [
+            "hungarian",      # Classic Hungarian algorithm
+            "balanced",       # Balanced by popularity
             "priority_fair",  # Priority to less fortunate
-            "greedy_smart",  # Smart greedy algorithm
-            "hybrid",  # Combination of strategies
+            "greedy_smart",   # Smart greedy algorithm
+            "hybrid",         # Combination of strategies
         ]
 
-    def _crea_pool_personaggi(self, n_persone: int) -> Counter:
+    def _create_character_pool(self, n_people: int) -> Counter:
         """
         Create a Counter of available character slots, replicating as needed.
 
         Args:
-            n_persone: Number of people to assign characters to
+            n_people: Number of people to assign characters to
 
         Returns:
             Counter mapping character name to available slots
         """
-        if not self.tutti_personaggi:
+        if not self.all_characters:
             raise ValueError("No characters available")
-        n_personaggi = len(self.tutti_personaggi)
-        copie_necessarie = (n_persone + n_personaggi - 1) // n_personaggi
+        n_characters = len(self.all_characters)
+        copies_needed = (n_people + n_characters - 1) // n_characters
         pool: List[str] = []
-        for _ in range(copie_necessarie):
-            pool.extend(self.tutti_personaggi)
-        return Counter(pool[:n_persone])
+        for _ in range(copies_needed):
+            pool.extend(self.all_characters)
+        return Counter(pool[:n_people])
 
-    def analizza_conflitti(self) -> Dict:
+    def analyze_conflicts(self) -> Dict:
         """
         Preemptively analyzes potential conflicts in preferences.
 
         Returns:
             dict: Detailed analysis with:
-                - character_conflicts: most requested characters
-                - people_at_risk: people with limited preferences
-                - preference_coverage: coverage statistics
+                - popular_characters: most requested characters
+                - at_risk_people: people with limited preferences
+                - avg_preferences: average preferences per person
                 - suggestions: improvement recommendations
         """
-        if not self.persone_scelte:
-            return {"errore": "Nessun dato caricato"}
+        if not self.people_choices:
+            return {"error": "No data loaded"}
 
-        # Conta popolarità di ogni personaggio
-        popolarita = Counter()
-        lunghezze_preferenze = {}
+        # Count popularity of each character
+        popularity = Counter()
+        preference_lengths = {}
 
-        for persona, preferenze in self.persone_scelte.items():
-            lunghezze_preferenze[persona] = len(preferenze)
-            for personaggio in preferenze:
-                popolarita[personaggio] += 1
+        for person, preferences in self.people_choices.items():
+            preference_lengths[person] = len(preferences)
+            for character in preferences:
+                popularity[character] += 1
 
         # Identify conflicts
-        n_persone = len(self.persone_scelte)
-        personaggi_conflitto = {
-            p: count for p, count in popolarita.items() if count > 1
+        n_people = len(self.people_choices)
+        conflict_characters = {
+            c: count for c, count in popularity.items() if count > 1
         }
-        personaggi_critici = {
-            p: count
-            for p, count in popolarita.items()
-            if count >= n_persone * CONFLICT_THRESHOLD
+        critical_characters = {
+            c: count
+            for c, count in popularity.items()
+            if count >= n_people * CONFLICT_THRESHOLD
         }
 
-        # Persone a rischio (poche preferenze in zone ad alto conflitto)
-        persone_rischio = []
-        for persona, preferenze in self.persone_scelte.items():
-            if len(preferenze) <= 2:  # Few preferences
-                conflitti_personali = sum(
-                    1 for p in preferenze if p in personaggi_conflitto
+        # At-risk people (few preferences in high-conflict zones)
+        at_risk_people = []
+        for person, preferences in self.people_choices.items():
+            if len(preferences) <= 2:  # Few preferences
+                personal_conflicts = sum(
+                    1 for c in preferences if c in conflict_characters
                 )
-                if conflitti_personali >= len(preferenze) * RISK_CONFLICT_RATIO:
-                    persone_rischio.append(
+                if personal_conflicts >= len(preferences) * RISK_CONFLICT_RATIO:
+                    at_risk_people.append(
                         {
-                            "persona": persona,
-                            "preferenze": len(preferenze),
-                            "conflitti": conflitti_personali,
+                            "person": person,
+                            "preferences": len(preferences),
+                            "conflicts": personal_conflicts,
                         }
                     )
 
         # Underutilized characters
-        personaggi_set = set(self.tutti_personaggi)
-        personaggi_non_richiesti = personaggi_set - set(popolarita.keys())
+        characters_set = set(self.all_characters)
+        unrequested_characters = characters_set - set(popularity.keys())
 
         # Suggestions
-        suggerimenti = []
+        suggestions = []
 
-        if personaggi_critici:
-            suggerimenti.append(
-                f"⚠️ Highly requested characters: {', '.join(personaggi_critici.keys())}"
+        if critical_characters:
+            suggestions.append(
+                f"⚠️ Highly requested characters: {', '.join(critical_characters.keys())}"
             )
 
-        if persone_rischio:
-            nomi = [p["persona"] for p in persone_rischio]
-            suggerimenti.append(
-                f"⚠️ People at risk (few preferences): {', '.join(nomi)}"
+        if at_risk_people:
+            names = [p["person"] for p in at_risk_people]
+            suggestions.append(
+                f"⚠️ People at risk (few preferences): {', '.join(names)}"
             )
 
-        if personaggi_non_richiesti:
-            suggerimenti.append(
-                f"💡 Never requested characters: {', '.join(personaggi_non_richiesti)}"
+        if unrequested_characters:
+            suggestions.append(
+                f"💡 Never requested characters: {', '.join(unrequested_characters)}"
             )
-            suggerimenti.append("💡 Consider removing or promoting them")
+            suggestions.append("💡 Consider removing or promoting them")
 
-        if len(self.tutti_personaggi) - len(self.persone_scelte) < 2:
-            suggerimenti.append("⚠️ Few backup characters, consider adding more")
+        if len(self.all_characters) - len(self.people_choices) < 2:
+            suggestions.append("⚠️ Few backup characters, consider adding more")
 
-        pref_values = list(lunghezze_preferenze.values())
-        media_preferenze = (
+        pref_values = list(preference_lengths.values())
+        avg_preferences = (
             float(np.mean(pref_values))
             if NUMPY_AVAILABLE
             else float(statistics_mean(pref_values))
         )
 
-        self.analisi_conflitti = {
-            "n_persone": n_persone,
-            "n_personaggi": len(self.tutti_personaggi),
-            "personaggi_popolari": dict(popolarita.most_common(5)),
-            "personaggi_conflitto": personaggi_conflitto,
-            "personaggi_critici": personaggi_critici,
-            "persone_rischio": persone_rischio,
-            "personaggi_non_richiesti": list(personaggi_non_richiesti),
-            "media_preferenze": media_preferenze,
-            "suggerimenti": suggerimenti,
+        self.conflict_analysis = {
+            "n_people": n_people,
+            "n_characters": len(self.all_characters),
+            "popular_characters": dict(popularity.most_common(5)),
+            "conflict_characters": conflict_characters,
+            "critical_characters": critical_characters,
+            "at_risk_people": at_risk_people,
+            "unrequested_characters": list(unrequested_characters),
+            "avg_preferences": avg_preferences,
+            "suggestions": suggestions,
         }
 
-        return self.analisi_conflitti
+        return self.conflict_analysis
 
-    def stampa_analisi_conflitti(self):
+    def print_conflict_analysis(self):
         """Print conflict analysis in readable format."""
-        if not self.analisi_conflitti:
-            self.analizza_conflitti()
+        if not self.conflict_analysis:
+            self.analyze_conflicts()
 
-        analisi = self.analisi_conflitti
+        analysis = self.conflict_analysis
 
         print("=== CONFLICT AND RISK ANALYSIS ===\n")
 
         print(f"📊 General statistics:")
-        print(f"   • People: {analisi['n_persone']}")
-        print(f"   • Characters: {analisi['n_personaggi']}")
-        print(f"   • Average preferences per person: {analisi['media_preferenze']:.1f}")
+        print(f"   • People: {analysis['n_people']}")
+        print(f"   • Characters: {analysis['n_characters']}")
+        print(f"   • Average preferences per person: {analysis['avg_preferences']:.1f}")
         print()
 
-        if analisi["personaggi_popolari"]:
+        if analysis["popular_characters"]:
             print("🔥 Most requested characters:")
-            for personaggio, count in analisi["personaggi_popolari"].items():
-                percentage = count / analisi["n_persone"] * 100
-                print(f"   • {personaggio}: {count} people ({percentage:.1f}%)")
+            for character, count in analysis["popular_characters"].items():
+                percentage = count / analysis["n_people"] * 100
+                print(f"   • {character}: {count} people ({percentage:.1f}%)")
             print()
 
-        if analisi["personaggi_critici"]:
+        if analysis["critical_characters"]:
             print("⚠️ CRITICAL CONFLICTS:")
-            for personaggio, count in analisi["personaggi_critici"].items():
-                print(f"   • {personaggio}: requested by {count} people!")
+            for character, count in analysis["critical_characters"].items():
+                print(f"   • {character}: requested by {count} people!")
             print()
 
-        if analisi["persone_rischio"]:
+        if analysis["at_risk_people"]:
             print("🚨 People at risk of dissatisfaction:")
-            for info in analisi["persone_rischio"]:
+            for info in analysis["at_risk_people"]:
                 print(
-                    f"   • {info['persona']}: {info['preferenze']} preferences, "
-                    f"{info['conflitti']} in conflict"
+                    f"   • {info['person']}: {info['preferences']} preferences, "
+                    f"{info['conflicts']} in conflict"
                 )
             print()
 
-        if analisi["personaggi_non_richiesti"]:
+        if analysis["unrequested_characters"]:
             print("😴 Never requested characters:")
-            print(f"   • {', '.join(analisi['personaggi_non_richiesti'])}")
+            print(f"   • {', '.join(analysis['unrequested_characters'])}")
             print()
 
-        if analisi["suggerimenti"]:
+        if analysis["suggestions"]:
             print("💡 SUGGESTIONS:")
-            for suggerimento in analisi["suggerimenti"]:
-                print(f"   {suggerimento}")
+            for suggestion in analysis["suggestions"]:
+                print(f"   {suggestion}")
             print()
 
-    def espandi_preferenze_intelligente(
-        self, metodo="similarità"
+    def expand_preferences(
+        self, method: str = "similarity"
     ) -> Dict[str, List[str]]:
         """
         Automatically expands preferences to reduce conflicts.
 
         Args:
-            metodo: 'similarità', 'popolarità', 'casuale', 'bilanciato'
+            method: 'similarity', 'popularity', 'random', 'balanced'
 
         Returns:
             dict: New expanded preferences for each person
         """
-        if not self.analisi_conflitti:
-            self.analizza_conflitti()
+        if not self.conflict_analysis:
+            self.analyze_conflicts()
 
-        preferenze_espanse = {}
-        personaggi_disponibili = set(self.tutti_personaggi)
+        expanded_preferences = {}
+        available_characters = set(self.all_characters)
 
-        for persona, preferenze_originali in self.persone_scelte.items():
-            nuove_preferenze = preferenze_originali.copy()
-            personaggi_usati = set(preferenze_originali)
+        for person, original_preferences in self.people_choices.items():
+            new_preferences = original_preferences.copy()
+            used_characters = set(original_preferences)
 
             # Add until we have at least 3-4 preferences
-            target_preferenze = min(4, len(self.tutti_personaggi))
+            target_preferences = min(4, len(self.all_characters))
 
-            while len(nuove_preferenze) < target_preferenze:
-                candidati = personaggi_disponibili - personaggi_usati
-                if not candidati:
+            while len(new_preferences) < target_preferences:
+                candidates = available_characters - used_characters
+                if not candidates:
                     break
 
-                if metodo == "popolarità":
+                if method == "popularity":
                     # Add less popular characters
-                    popolarita = self.analisi_conflitti["personaggi_popolari"]
-                    candidato = min(candidati, key=lambda x: popolarita.get(x, 0))
+                    popularity = self.conflict_analysis["popular_characters"]
+                    candidate = min(candidates, key=lambda x: popularity.get(x, 0))
 
-                elif metodo == "similarità":
+                elif method == "similarity":
                     # Add characters requested by people with similar preferences
-                    candidato = self._trova_personaggio_simile(persona, candidati)
+                    candidate = self._find_similar_character(person, candidates)
 
-                elif metodo == "bilanciato":
+                elif method == "balanced":
                     # Mix of popularity and randomness
                     if random.random() < BALANCED_RANDOM_RATIO:
-                        popolarita = self.analisi_conflitti["personaggi_popolari"]
-                        candidato = min(candidati, key=lambda x: popolarita.get(x, 0))
+                        popularity = self.conflict_analysis["popular_characters"]
+                        candidate = min(candidates, key=lambda x: popularity.get(x, 0))
                     else:
-                        candidato = random.choice(list(candidati))
+                        candidate = random.choice(list(candidates))
 
                 else:  # random
-                    candidato = random.choice(list(candidati))
+                    candidate = random.choice(list(candidates))
 
-                nuove_preferenze.append(candidato)
-                personaggi_usati.add(candidato)
+                new_preferences.append(candidate)
+                used_characters.add(candidate)
 
-            preferenze_espanse[persona] = nuove_preferenze
+            expanded_preferences[person] = new_preferences
 
-        return preferenze_espanse
+        return expanded_preferences
 
-    def _trova_personaggio_simile(
-        self, persona_target: str, candidati: Set[str]
+    def _find_similar_character(
+        self, target_person: str, candidates: Set[str]
     ) -> str:
         """Find a character based on people with similar preferences."""
-        preferenze_target = set(self.persone_scelte[persona_target])
+        target_preferences = set(self.people_choices[target_person])
 
         # Find people with similar preferences
-        scores_similarita = {}
-        for altra_persona, altre_preferenze in self.persone_scelte.items():
-            if altra_persona == persona_target:
+        similarity_scores = {}
+        for other_person, other_preferences in self.people_choices.items():
+            if other_person == target_person:
                 continue
 
-            altre_pref_set = set(altre_preferenze)
-            intersezione = len(preferenze_target & altre_pref_set)
-            unione = len(preferenze_target | altre_pref_set)
+            other_pref_set = set(other_preferences)
+            intersection = len(target_preferences & other_pref_set)
+            union = len(target_preferences | other_pref_set)
 
-            if unione > 0:
-                similarita = intersezione / unione  # Jaccard similarity
-                scores_similarita[altra_persona] = similarita
+            if union > 0:
+                similarity = intersection / union  # Jaccard similarity
+                similarity_scores[other_person] = similarity
 
         # Find characters used by similar people
-        personaggi_suggeriti = Counter()
-        for altra_persona, similarita in scores_similarita.items():
-            if similarita > SIMILARITY_THRESHOLD:
-                for personaggio in self.persone_scelte[altra_persona]:
-                    if personaggio in candidati:
-                        personaggi_suggeriti[personaggio] += similarita
+        suggested_characters = Counter()
+        for other_person, similarity in similarity_scores.items():
+            if similarity > SIMILARITY_THRESHOLD:
+                for character in self.people_choices[other_person]:
+                    if character in candidates:
+                        suggested_characters[character] += similarity
 
-        if personaggi_suggeriti:
-            return personaggi_suggeriti.most_common(1)[0][0]
+        if suggested_characters:
+            return suggested_characters.most_common(1)[0][0]
         else:
-            return random.choice(list(candidati))
+            return random.choice(list(candidates))
 
-    def assegna_con_strategia(
-        self, strategia: str = "hybrid", espandi_preferenze: bool = True
+    def assign_with_strategy(
+        self, strategy: str = "hybrid", expand_prefs: bool = True
     ) -> Dict[str, str]:
         """
         Assign characters using the specified strategy.
 
         Args:
-            strategia: Name of the strategy to use
-            espandi_preferenze: Whether to automatically expand preferences
+            strategy: Name of the strategy to use
+            expand_prefs: Whether to automatically expand preferences
 
         Returns:
             dict: Assignments {person: character}
         """
-        if not self.persone_scelte:
-            raise ValueError("Nessun dato caricato")
+        if not self.people_choices:
+            raise ValueError("No data loaded")
 
         # Analyze conflicts if not done
-        if not self.analisi_conflitti:
-            self.analizza_conflitti()
+        if not self.conflict_analysis:
+            self.analyze_conflicts()
 
         # Expand preferences if requested
-        preferenze_da_usare = self.persone_scelte
-        if espandi_preferenze:
+        preferences_to_use = self.people_choices
+        if expand_prefs:
             print("🔧 Expanding preferences to reduce conflicts...")
-            preferenze_da_usare = self.espandi_preferenze_intelligente("bilanciato")
-            print(f"   Preferences expanded for {len(preferenze_da_usare)} people")
+            preferences_to_use = self.expand_preferences("balanced")
+            print(f"   Preferences expanded for {len(preferences_to_use)} people")
 
-        # Esegui strategia scelta
-        if strategia == "hungarian":
-            return self._assegna_hungarian(preferenze_da_usare)
-        elif strategia == "balanced":
-            return self._assegna_bilanciato(preferenze_da_usare)
-        elif strategia == "priority_fair":
-            return self._assegna_priorita_equa(preferenze_da_usare)
-        elif strategia == "greedy_smart":
-            return self._assegna_greedy_intelligente(preferenze_da_usare)
-        elif strategia == "hybrid":
-            return self._assegna_hybrid(preferenze_da_usare)
+        # Run chosen strategy
+        if strategy == "hungarian":
+            return self._assign_hungarian(preferences_to_use)
+        elif strategy == "balanced":
+            return self._assign_balanced(preferences_to_use)
+        elif strategy == "priority_fair":
+            return self._assign_priority_fair(preferences_to_use)
+        elif strategy == "greedy_smart":
+            return self._assign_greedy_smart(preferences_to_use)
+        elif strategy == "hybrid":
+            return self._assign_hybrid(preferences_to_use)
         else:
-            raise ValueError(f"Strategia sconosciuta: {strategia}")
+            raise ValueError(f"Unknown strategy: {strategy}")
 
-    def _assegna_hungarian(self, preferenze: Dict[str, List[str]]) -> Dict[str, str]:
+    def _assign_hungarian(self, preferences: Dict[str, List[str]]) -> Dict[str, str]:
         """Classic Hungarian algorithm."""
         if not SCIPY_AVAILABLE:
             logger.warning("scipy not available, using smart greedy algorithm...")
             print("⚠️ scipy not available, using smart greedy algorithm...")
-            return self._assegna_greedy_intelligente(preferenze)
+            return self._assign_greedy_smart(preferences)
 
         if not NUMPY_AVAILABLE:
             logger.warning("numpy not available, using smart greedy algorithm...")
             print("⚠️ numpy not available, using smart greedy algorithm...")
-            return self._assegna_greedy_intelligente(preferenze)
+            return self._assign_greedy_smart(preferences)
 
-        persone = list(preferenze.keys())
-        personaggi_originali = self.tutti_personaggi
+        people = list(preferences.keys())
+        original_characters = self.all_characters
 
         # Calculate how many copies of each character are needed
-        n_persone = len(persone)
-        n_personaggi = len(personaggi_originali)
-        copie_necessarie = (n_persone + n_personaggi - 1) // n_personaggi
+        n_people = len(people)
+        n_characters = len(original_characters)
+        copies_needed = (n_people + n_characters - 1) // n_characters
 
         # Replicate characters the necessary number of times
-        personaggi = []
-        for _ in range(copie_necessarie):
-            personaggi.extend(personaggi_originali)
-        personaggi = personaggi[:n_persone]
+        characters = []
+        for _ in range(copies_needed):
+            characters.extend(original_characters)
+        characters = characters[:n_people]
 
         # Cost matrix: np.inf means impossible/undesired assignment
-        costi = np.full((n_persone, n_persone), np.inf)
+        costs = np.full((n_people, n_people), np.inf)
 
-        for i, persona in enumerate(persone):
-            scelte = preferenze[persona]
-            for j, personaggio in enumerate(personaggi):
-                if personaggio in scelte:
-                    costi[i][j] = scelte.index(personaggio)
+        for i, person in enumerate(people):
+            choices = preferences[person]
+            for j, character in enumerate(characters):
+                if character in choices:
+                    costs[i][j] = choices.index(character)
 
-        # Risolvi
-        indici_persone, indici_personaggi = linear_sum_assignment(costi)
+        # Solve
+        people_indices, character_indices = linear_sum_assignment(costs)
 
         return {
-            persone[i]: personaggi[j] for i, j in zip(indici_persone, indici_personaggi)
+            people[i]: characters[j]
+            for i, j in zip(people_indices, character_indices)
         }
 
-    def _assegna_bilanciato(self, preferenze: Dict[str, List[str]]) -> Dict[str, str]:
+    def _assign_balanced(self, preferences: Dict[str, List[str]]) -> Dict[str, str]:
         """Strategy that balances character popularity."""
-        assegnazioni = {}
-        n_persone = len(preferenze)
+        assignments = {}
+        n_people = len(preferences)
 
         # Count popularity
-        popolarita = Counter()
-        for scelte in preferenze.values():
-            for personaggio in scelte:
-                popolarita[personaggio] += 1
+        popularity = Counter()
+        for choices in preferences.values():
+            for character in choices:
+                popularity[character] += 1
 
         # Available character pool via Counter (O(1) membership and removal)
-        disponibilita = self._crea_pool_personaggi(n_persone)
+        availability = self._create_character_pool(n_people)
 
         # Sort people: those with rarer preferences first
-        def rarità_preferenze(persona):
-            scelte = preferenze[persona]
+        def preference_rarity(person):
+            choices = preferences[person]
             return (
-                sum(popolarita[p] for p in scelte) / len(scelte)
-                if scelte
+                sum(popularity[c] for c in choices) / len(choices)
+                if choices
                 else float("inf")
             )
 
-        persone_ordinate = sorted(preferenze.keys(), key=rarità_preferenze)
+        sorted_people = sorted(preferences.keys(), key=preference_rarity)
 
-        for persona in persone_ordinate:
-            scelte = preferenze[persona]
-            assegnato = False
+        for person in sorted_people:
+            choices = preferences[person]
+            assigned = False
 
             # Search in preferences, prioritizing less popular ones
-            scelte_ordinate = sorted(scelte, key=lambda x: popolarita[x])
+            sorted_choices = sorted(choices, key=lambda x: popularity[x])
 
-            for personaggio in scelte_ordinate:
-                if disponibilita[personaggio] > 0:
-                    assegnazioni[persona] = personaggio
-                    disponibilita[personaggio] -= 1
-                    assegnato = True
+            for character in sorted_choices:
+                if availability[character] > 0:
+                    assignments[person] = character
+                    availability[character] -= 1
+                    assigned = True
                     break
 
             # Emergency assignment from remaining pool
-            if not assegnato:
-                for personaggio, count in disponibilita.items():
+            if not assigned:
+                for character, count in availability.items():
                     if count > 0:
-                        assegnazioni[persona] = personaggio
-                        disponibilita[personaggio] -= 1
+                        assignments[person] = character
+                        availability[character] -= 1
                         break
 
-        return assegnazioni
+        return assignments
 
-    def _assegna_priorita_equa(
-        self, preferenze: Dict[str, List[str]]
+    def _assign_priority_fair(
+        self, preferences: Dict[str, List[str]]
     ) -> Dict[str, str]:
         """Strategy that gives priority to those with fewer options."""
-        assegnazioni = {}
-        n_persone = len(preferenze)
+        assignments = {}
+        n_people = len(preferences)
 
         # Available character pool via Counter
-        disponibilita = self._crea_pool_personaggi(n_persone)
+        availability = self._create_character_pool(n_people)
 
         # Sort by number of preferences (fewer first)
-        persone_ordinate = sorted(preferenze.keys(), key=lambda x: len(preferenze[x]))
+        sorted_people = sorted(preferences.keys(), key=lambda x: len(preferences[x]))
 
-        for persona in persone_ordinate:
-            scelte = preferenze[persona]
-            assegnato = False
+        for person in sorted_people:
+            choices = preferences[person]
+            assigned = False
 
-            # Prova tutte le preferenze
-            for personaggio in scelte:
-                if disponibilita[personaggio] > 0:
-                    assegnazioni[persona] = personaggio
-                    disponibilita[personaggio] -= 1
-                    assegnato = True
+            # Try all preferences
+            for character in choices:
+                if availability[character] > 0:
+                    assignments[person] = character
+                    availability[character] -= 1
+                    assigned = True
                     break
 
-            # Assegnazione casuale se necessario
-            if not assegnato:
-                for personaggio, count in disponibilita.items():
+            # Random assignment if necessary
+            if not assigned:
+                for character, count in availability.items():
                     if count > 0:
-                        assegnazioni[persona] = personaggio
-                        disponibilita[personaggio] -= 1
+                        assignments[person] = character
+                        availability[character] -= 1
                         break
 
-        return assegnazioni
+        return assignments
 
-    def _assegna_greedy_intelligente(
-        self, preferenze: Dict[str, List[str]]
+    def _assign_greedy_smart(
+        self, preferences: Dict[str, List[str]]
     ) -> Dict[str, str]:
         """Improved version of the greedy algorithm."""
-        assegnazioni = {}
-        n_persone = len(preferenze)
+        assignments = {}
+        n_people = len(preferences)
 
         # Available character pool via Counter
-        disponibilita = self._crea_pool_personaggi(n_persone)
+        availability = self._create_character_pool(n_people)
 
         # Calculate "urgency" for each person
-        def calcola_urgenza(persona):
-            scelte = preferenze[persona]
-            disponibili = sum(1 for p in scelte if disponibilita[p] > 0)
-            return disponibili  # Fewer options = more urgent
+        def calculate_urgency(person):
+            choices = preferences[person]
+            available = sum(1 for c in choices if availability[c] > 0)
+            return available  # Fewer options = more urgent
 
         # Process in order of urgency
-        while len(assegnazioni) < len(preferenze):
+        while len(assignments) < len(preferences):
             # Find most urgent person
-            persone_rimanenti = [p for p in preferenze.keys() if p not in assegnazioni]
-            if not persone_rimanenti:
+            remaining_people = [p for p in preferences.keys() if p not in assignments]
+            if not remaining_people:
                 break
 
-            persona_urgente = min(persone_rimanenti, key=calcola_urgenza)
-            scelte = preferenze[persona_urgente]
+            urgent_person = min(remaining_people, key=calculate_urgency)
+            choices = preferences[urgent_person]
 
-            # Assegna prima preferenza disponibile
-            assegnato = False
-            for personaggio in scelte:
-                if disponibilita[personaggio] > 0:
-                    assegnazioni[persona_urgente] = personaggio
-                    disponibilita[personaggio] -= 1
-                    assegnato = True
+            # Assign first available preference
+            assigned = False
+            for character in choices:
+                if availability[character] > 0:
+                    assignments[urgent_person] = character
+                    availability[character] -= 1
+                    assigned = True
                     break
 
-            # Se non ha preferenze disponibili, assegna il primo personaggio disponibile
-            if not assegnato:
-                for personaggio, count in disponibilita.items():
+            # If no preferences available, assign the first available character
+            if not assigned:
+                for character, count in availability.items():
                     if count > 0:
-                        assegnazioni[persona_urgente] = personaggio
-                        disponibilita[personaggio] -= 1
+                        assignments[urgent_person] = character
+                        availability[character] -= 1
                         break
 
-        return assegnazioni
+        return assignments
 
-    def _assegna_hybrid(self, preferenze: Dict[str, List[str]]) -> Dict[str, str]:
+    def _assign_hybrid(self, preferences: Dict[str, List[str]]) -> Dict[str, str]:
         """Hybrid strategy that tests all sub-strategies and picks the best result."""
         # Explicit dispatch table mapping strategy names to their methods
         strategy_map = {
-            "hungarian": self._assegna_hungarian,
-            "balanced": self._assegna_bilanciato,
-            "priority_fair": self._assegna_priorita_equa,
-            "greedy_smart": self._assegna_greedy_intelligente,
+            "hungarian": self._assign_hungarian,
+            "balanced": self._assign_balanced,
+            "priority_fair": self._assign_priority_fair,
+            "greedy_smart": self._assign_greedy_smart,
         }
-        risultati = []
+        results = []
 
-        for strategia, fn in strategy_map.items():
-            if strategia == "hungarian" and not SCIPY_AVAILABLE:
+        for strategy, fn in strategy_map.items():
+            if strategy == "hungarian" and not SCIPY_AVAILABLE:
                 continue
 
             try:
-                assegnazione = fn(preferenze)
-                punteggio = self._valuta_assegnazione(assegnazione, preferenze)
-                risultati.append((strategia, assegnazione, punteggio))
+                assignment = fn(preferences)
+                score = self._evaluate_assignment(assignment, preferences)
+                results.append((strategy, assignment, score))
             except Exception as e:
-                logger.warning(f"Strategy '{strategia}' failed in hybrid: {e}")
+                logger.warning(f"Strategy '{strategy}' failed in hybrid: {e}")
                 continue
 
-        if not risultati:
-            return self._assegna_greedy_intelligente(preferenze)
+        if not results:
+            return self._assign_greedy_smart(preferences)
 
-        # Scegli la migliore (punteggio più basso = meglio)
-        migliore = min(risultati, key=lambda x: x[2])
+        # Choose the best (lower score = better)
+        best = min(results, key=lambda x: x[2])
         print(
-            f"🎯 Strategia ibrida: usata '{migliore[0]}' (punteggio: {migliore[2]:.2f})"
+            f"🎯 Hybrid strategy: used '{best[0]}' (score: {best[2]:.2f})"
         )
 
-        return migliore[1]
+        return best[1]
 
-    def _valuta_assegnazione(
-        self, assegnazioni: Dict[str, str], preferenze: Dict[str, List[str]]
+    def _evaluate_assignment(
+        self, assignments: Dict[str, str], preferences: Dict[str, List[str]]
     ) -> float:
         """Evaluate the quality of an assignment."""
-        punteggio_totale = 0
-        preferenze_soddisfatte = 0
+        total_score = 0
+        satisfied_count = 0
 
-        for persona, personaggio in assegnazioni.items():
-            scelte = preferenze[persona]
-            if personaggio in scelte:
-                posizione = scelte.index(personaggio)
-                punteggio_totale += posizione  # 0 = better
-                preferenze_soddisfatte += 1
+        for person, character in assignments.items():
+            choices = preferences[person]
+            if character in choices:
+                position = choices.index(character)
+                total_score += position  # 0 = better
+                satisfied_count += 1
             else:
-                punteggio_totale += 10  # Penalty for non-preference
+                total_score += 10  # Penalty for non-preference
 
         # Bonus for high satisfaction percentage
-        percentuale_soddisfatte = preferenze_soddisfatte / len(assegnazioni)
-        punteggio_totale *= 2 - percentuale_soddisfatte  # Multiply by 1-2
+        satisfaction_rate = satisfied_count / len(assignments)
+        total_score *= 2 - satisfaction_rate  # Multiply by 1-2
 
-        return punteggio_totale
+        return total_score
 
-    def confronta_strategie(self) -> Dict:
+    def compare_strategies(self) -> Dict:
         """Compare all available strategies."""
-        if not self.persone_scelte:
+        if not self.people_choices:
             raise ValueError("No data loaded")
 
-        risultati_confronto = {}
+        comparison_results = {}
 
         print("🔍 Comparing all strategies...\n")
 
-        for strategia in self.strategie_disponibili:
-            if strategia == "hungarian" and not SCIPY_AVAILABLE:
+        for strategy in self.available_strategies:
+            if strategy == "hungarian" and not SCIPY_AVAILABLE:
                 continue
-            if strategia == "hybrid":  # Evita ricorsione
+            if strategy == "hybrid":  # Avoid recursion
                 continue
 
             try:
-                assegnazione = self.assegna_con_strategia(
-                    strategia, espandi_preferenze=False
+                assignment = self.assign_with_strategy(
+                    strategy, expand_prefs=False
                 )
 
                 # Calculate statistics
-                costo_totale = 0
-                preferenze_soddisfatte = 0
-                dettagli = []
-                n_persone = len(self.persone_scelte)
+                total_cost = 0
+                satisfied_count = 0
+                details = []
+                n_people = len(self.people_choices)
 
                 # Verify that there are assignments for all people
-                if len(assegnazione) != n_persone:
+                if len(assignment) != n_people:
                     raise ValueError(
-                        f"Incomplete assignments: {len(assegnazione)}/{n_persone} people"
+                        f"Incomplete assignments: {len(assignment)}/{n_people} people"
                     )
 
-                for persona, personaggio in assegnazione.items():
-                    scelte = self.persone_scelte[persona]
-                    if personaggio in scelte:
-                        posizione = scelte.index(personaggio)
-                        costo_totale += posizione
-                        preferenze_soddisfatte += 1
-                        dettagli.append(
-                            f"{persona}: {personaggio} (pref #{posizione+1})"
+                for person, character in assignment.items():
+                    choices = self.people_choices[person]
+                    if character in choices:
+                        position = choices.index(character)
+                        total_cost += position
+                        satisfied_count += 1
+                        details.append(
+                            f"{person}: {character} (pref #{position+1})"
                         )
                     else:
-                        costo_totale += PREFERENCE_PENALTY
-                        dettagli.append(f"{persona}: {personaggio} (NON preferito)")
+                        total_cost += PREFERENCE_PENALTY
+                        details.append(f"{person}: {character} (NOT preferred)")
 
-                percentuale = (preferenze_soddisfatte / n_persone) * 100
+                percentage = (satisfied_count / n_people) * 100
 
-                risultati_confronto[strategia] = {
-                    "assegnazione": assegnazione,
-                    "costo_totale": costo_totale,
-                    "preferenze_soddisfatte": f"{preferenze_soddisfatte}/{len(assegnazione)}",
-                    "percentuale_soddisfazione": percentuale,
-                    "dettagli": dettagli,
+                comparison_results[strategy] = {
+                    "assignment": assignment,
+                    "total_cost": total_cost,
+                    "satisfied_preferences": f"{satisfied_count}/{len(assignment)}",
+                    "satisfaction_percentage": percentage,
+                    "details": details,
                 }
 
-                print(f"✅ {strategia.upper()}:")
-                print(f"   Costo totale: {costo_totale}")
+                print(f"✅ {strategy.upper()}:")
+                print(f"   Total cost: {total_cost}")
                 print(
-                    f"   Soddisfazione: {percentuale:.1f}% ({preferenze_soddisfatte}/{len(assegnazione)})"
+                    f"   Satisfaction: {percentage:.1f}% ({satisfied_count}/{len(assignment)})"
                 )
                 print()
 
             except Exception as e:
-                logger.error(f"Strategy '{strategia}' failed during comparison: {e}")
-                print(f"❌ {strategia}: Errore - {e}")
+                logger.error(f"Strategy '{strategy}' failed during comparison: {e}")
+                print(f"❌ {strategy}: Error - {e}")
                 print()
 
-        return risultati_confronto
+        return comparison_results
 
-    def carica_da_csv(
+    def load_from_csv(
         self, file_path: str, formato: str = "wide", delimiter: str = ","
     ) -> None:
         """
@@ -682,161 +683,161 @@ class AdvancedCharacterAssignment:
         from csv_handler import CSVHandler
 
         try:
-            self.persone_scelte, self.tutti_personaggi = CSVHandler.carica_da_csv(
+            self.people_choices, self.all_characters = CSVHandler.load_from_csv(
                 file_path, formato, delimiter
             )
             # Reset conflict analysis
-            self.analisi_conflitti = None
+            self.conflict_analysis = None
 
         except Exception as e:
             print(f"❌ Error loading CSV: {str(e)}")
             raise
 
-    def stampa_risultati_avanzati(self, assegnazioni: Dict[str, str]):
+    def print_advanced_results(self, assignments: Dict[str, str]):
         """Advanced version of result printing."""
         print("=== ADVANCED ASSIGNMENT RESULTS ===\n")
 
-        if self.analisi_conflitti:
-            persone_rischio = {
-                p["persona"] for p in self.analisi_conflitti["persone_rischio"]
+        if self.conflict_analysis:
+            at_risk = {
+                p["person"] for p in self.conflict_analysis["at_risk_people"]
             }
         else:
-            persone_rischio = set()
+            at_risk = set()
 
-        costo_totale = 0
-        preferenze_soddisfatte = 0
-        risultati_per_categoria = {
+        total_cost = 0
+        satisfied_count = 0
+        results_by_category = {
             "excellent": [],
             "good": [],
             "acceptable": [],
             "problematic": [],
         }
 
-        for persona, personaggio in assegnazioni.items():
-            scelte = self.persone_scelte[persona]
-            emoji_rischio = "🚨" if persona in persone_rischio else ""
+        for person, character in assignments.items():
+            choices = self.people_choices[person]
+            risk_emoji = "🚨" if person in at_risk else ""
 
-            if personaggio in scelte:
-                posizione = scelte.index(personaggio)
-                costo_totale += posizione
-                preferenze_soddisfatte += 1
+            if character in choices:
+                position = choices.index(character)
+                total_cost += position
+                satisfied_count += 1
 
-                if posizione == 0:
-                    categoria = "excellent"
+                if position == 0:
+                    category = "excellent"
                     emoji = "🥇"
-                elif posizione <= 1:
-                    categoria = "good"
+                elif position <= 1:
+                    category = "good"
                     emoji = "🥈"
                 else:
-                    categoria = "acceptable"
+                    category = "acceptable"
                     emoji = "🥉"
 
-                risultati_per_categoria[categoria].append(
-                    f"{emoji} {persona}: {personaggio} (preference #{posizione+1}) {emoji_rischio}"
+                results_by_category[category].append(
+                    f"{emoji} {person}: {character} (preference #{position+1}) {risk_emoji}"
                 )
             else:
-                costo_totale += PREFERENCE_PENALTY
-                risultati_per_categoria["problematic"].append(
-                    f"😞 {persona}: {personaggio} (NOT in preferences) {emoji_rischio}"
+                total_cost += PREFERENCE_PENALTY
+                results_by_category["problematic"].append(
+                    f"😞 {person}: {character} (NOT in preferences) {risk_emoji}"
                 )
 
         # Print by category
-        for categoria, risultati in risultati_per_categoria.items():
-            if risultati:
-                print(f"{categoria.upper()}:")
-                for risultato in risultati:
-                    print(f"  {risultato}")
+        for category, results in results_by_category.items():
+            if results:
+                print(f"{category.upper()}:")
+                for result in results:
+                    print(f"  {result}")
                 print()
 
         # Final statistics
-        percentuale = preferenze_soddisfatte / len(assegnazioni) * 100
+        percentage = satisfied_count / len(assignments) * 100
         print(f"📊 FINAL STATISTICS:")
-        print(f"   • Total cost: {costo_totale}")
+        print(f"   • Total cost: {total_cost}")
         print(
-            f"   • Satisfied preferences: {preferenze_soddisfatte}/{len(assegnazioni)} ({percentuale:.1f}%)"
+            f"   • Satisfied preferences: {satisfied_count}/{len(assignments)} ({percentage:.1f}%)"
         )
 
-        if percentuale >= 90:
+        if percentage >= 90:
             print("   🎉 EXCELLENT Result!")
-        elif percentuale >= 75:
+        elif percentage >= 75:
             print("   👍 GOOD Result")
-        elif percentuale >= 50:
+        elif percentage >= 50:
             print("   😐 ACCEPTABLE Result")
         else:
             print("   😞 PROBLEMATIC Result - consider revising preferences")
 
-    def trova_migliore_strategia(self, risultati_confronto: Dict) -> str:
+    def find_best_strategy(self, comparison_results: Dict) -> str:
         """Find the best strategy based on comparison results."""
-        if not risultati_confronto:
+        if not comparison_results:
             return "hybrid"  # Default if no results
 
         # Find the strategy with the best cost/satisfaction ratio
-        migliore_strategia = None
-        miglior_punteggio = float("inf")
+        best_strategy = None
+        best_score = float("inf")
 
-        for strategia, risultato in risultati_confronto.items():
-            costo = risultato["costo_totale"]
-            percentuale = risultato["percentuale_soddisfazione"]
+        for strategy, result in comparison_results.items():
+            cost = result["total_cost"]
+            percentage = result["satisfaction_percentage"]
 
             # Calculate a weighted score (lower = better)
             # Give more weight to satisfaction percentage
-            punteggio = costo * (100 - percentuale)
+            score = cost * (100 - percentage)
 
-            if punteggio < miglior_punteggio:
-                miglior_punteggio = punteggio
-                migliore_strategia = strategia
+            if score < best_score:
+                best_score = score
+                best_strategy = strategy
 
-        return migliore_strategia
+        return best_strategy
 
-    def genera_report_testuale(
-        self, assegnazioni: Dict[str, str], migliore_strategia: str
+    def generate_text_report(
+        self, assignments: Dict[str, str], best_strategy: str
     ) -> str:
         """Generate a detailed text report of the assignment."""
         report = []
         report.append("=== CHARACTER ASSIGNMENT REPORT ===")
         report.append(f"Date: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
-        report.append(f"Strategy used: {migliore_strategia.upper()}\n")
+        report.append(f"Strategy used: {best_strategy.upper()}\n")
 
         # General statistics
-        n_persone = len(self.persone_scelte)
-        n_personaggi = len(self.tutti_personaggi)
+        n_people = len(self.people_choices)
+        n_characters = len(self.all_characters)
         report.append("GENERAL STATISTICS:")
-        report.append(f"• Number of people: {n_persone}")
-        report.append(f"• Number of available characters: {n_personaggi}")
+        report.append(f"• Number of people: {n_people}")
+        report.append(f"• Number of available characters: {n_characters}")
         report.append(
-            f"• Average preferences per person: {self.analisi_conflitti['media_preferenze']:.1f}\n"
+            f"• Average preferences per person: {self.conflict_analysis['avg_preferences']:.1f}\n"
         )
 
         # Results by person
         report.append("ASSIGNMENTS:")
-        persone_ordinate = sorted(assegnazioni.keys())
-        for persona in persone_ordinate:
-            personaggio = assegnazioni[persona]
-            scelte = self.persone_scelte[persona]
-            if personaggio in scelte:
-                posizione = scelte.index(personaggio) + 1
-                report.append(f"• {persona}: {personaggio} (choice #{posizione})")
+        sorted_people = sorted(assignments.keys())
+        for person in sorted_people:
+            character = assignments[person]
+            choices = self.people_choices[person]
+            if character in choices:
+                position = choices.index(character) + 1
+                report.append(f"• {person}: {character} (choice #{position})")
             else:
-                report.append(f"• {persona}: {personaggio} (not in preferences)")
+                report.append(f"• {person}: {character} (not in preferences)")
 
         # Satisfaction statistics
-        n_soddisfatti = sum(
-            1 for p, c in assegnazioni.items() if c in self.persone_scelte[p]
+        n_satisfied = sum(
+            1 for p, c in assignments.items() if c in self.people_choices[p]
         )
-        perc_soddisfazione = (n_soddisfatti / n_persone) * 100
+        satisfaction_pct = (n_satisfied / n_people) * 100
 
         report.append(f"\nFINAL RESULTS:")
         report.append(
-            f"• People who received one of their choices: {n_soddisfatti}/{n_persone}"
+            f"• People who received one of their choices: {n_satisfied}/{n_people}"
         )
-        report.append(f"• Satisfaction percentage: {perc_soddisfazione:.1f}%")
+        report.append(f"• Satisfaction percentage: {satisfaction_pct:.1f}%")
 
         # Final evaluation
-        if perc_soddisfazione >= 90:
+        if satisfaction_pct >= 90:
             report.append("• Evaluation: EXCELLENT")
-        elif perc_soddisfazione >= 75:
+        elif satisfaction_pct >= 75:
             report.append("• Evaluation: GOOD")
-        elif perc_soddisfazione >= 50:
+        elif satisfaction_pct >= 50:
             report.append("• Evaluation: ACCEPTABLE")
         else:
             report.append("• Evaluation: PROBLEMATIC")
