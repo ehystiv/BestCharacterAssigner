@@ -346,16 +346,16 @@ def test_generate_text_report(populated_assigner):
 
 
 def test_create_character_pool(populated_assigner):
-    """Test the character pool helper creates the correct number of slots."""
+    """Test the character pool helper gives one slot per character."""
     n_people = len(populated_assigner.people_choices)
     pool = populated_assigner._create_character_pool(n_people)
 
-    # Total slots must equal n_people
-    assert sum(pool.values()) == n_people
+    # Every character must have exactly one slot
+    assert set(pool.keys()) == set(populated_assigner.all_characters)
+    assert all(count == 1 for count in pool.values())
 
-    # All characters in pool must be valid
-    for character in pool:
-        assert character in populated_assigner.all_characters
+    # Total slots equals n_characters (>= n_people per invariant)
+    assert sum(pool.values()) == len(populated_assigner.all_characters)
 
 
 def test_create_character_pool_empty_raises(empty_assigner):
@@ -364,30 +364,8 @@ def test_create_character_pool_empty_raises(empty_assigner):
         empty_assigner._create_character_pool(5)
 
 
-def test_assign_with_more_people_than_characters():
-    """Test assignment when n_people > n_characters (character replication expected)."""
-    assigner = AdvancedCharacterAssignment()
-    # 6 people, only 3 characters -> replication needed
-    assigner.people_choices = {
-        "Alice": ["CharA", "CharB"],
-        "Bob": ["CharB", "CharC"],
-        "Charlie": ["CharC", "CharA"],
-        "David": ["CharA", "CharC"],
-        "Eve": ["CharB", "CharA"],
-        "Frank": ["CharC", "CharB"],
-    }
-    assigner.all_characters = ["CharA", "CharB", "CharC"]
-
-    for strategy in ["balanced", "priority_fair", "greedy_smart"]:
-        assignment = assigner.assign_with_strategy(strategy, expand_prefs=False)
-
-        # All people must be assigned
-        assert len(assignment) == 6, f"{strategy}: expected 6 assignments"
-
-        # All assigned characters must be valid
-        for person, character in assignment.items():
-            assert character in assigner.all_characters, (
-                f"{strategy}: '{character}' is not a valid character"
-            )
-
-        # Characters CAN repeat (replication), uniqueness is NOT required
+def test_create_character_pool_too_few_characters_raises(populated_assigner):
+    """Test that requesting more people than characters raises ValueError."""
+    n_characters = len(populated_assigner.all_characters)
+    with pytest.raises(ValueError, match="Not enough characters"):
+        populated_assigner._create_character_pool(n_characters + 1)

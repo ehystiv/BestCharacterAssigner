@@ -76,22 +76,24 @@ class AdvancedCharacterAssignment:
 
     def _create_character_pool(self, n_people: int) -> Counter:
         """
-        Create a Counter of available character slots, replicating as needed.
+        Create a Counter of available character slots (one slot per character).
 
         Args:
             n_people: Number of people to assign characters to
 
         Returns:
-            Counter mapping character name to available slots
+            Counter mapping character name to available slots (1 each)
+
+        Raises:
+            ValueError: If no characters are loaded or fewer characters than people
         """
         if not self.all_characters:
             raise ValueError("No characters available")
-        n_characters = len(self.all_characters)
-        copies_needed = (n_people + n_characters - 1) // n_characters
-        pool: List[str] = []
-        for _ in range(copies_needed):
-            pool.extend(self.all_characters)
-        return Counter(pool[:n_people])
+        if len(self.all_characters) < n_people:
+            raise ValueError(
+                f"Not enough characters ({len(self.all_characters)}) for {n_people} people"
+            )
+        return Counter(self.all_characters)
 
     def analyze_conflicts(self) -> Dict:
         """
@@ -383,21 +385,15 @@ class AdvancedCharacterAssignment:
             return self._assign_greedy_smart(preferences)
 
         people = list(preferences.keys())
-        original_characters = self.all_characters
+        characters = self.all_characters
 
-        # Calculate how many copies of each character are needed
         n_people = len(people)
-        n_characters = len(original_characters)
-        copies_needed = (n_people + n_characters - 1) // n_characters
+        n_characters = len(characters)
 
-        # Replicate characters the necessary number of times
-        characters = []
-        for _ in range(copies_needed):
-            characters.extend(original_characters)
-        characters = characters[:n_people]
-
-        # Cost matrix: PREFERENCE_PENALTY for non-preferred assignments
-        costs = np.full((n_people, n_people), float(PREFERENCE_PENALTY))
+        # Rectangular cost matrix: n_people × n_characters
+        # linear_sum_assignment handles rectangular matrices, assigning each person
+        # to exactly one character and each character to at most one person.
+        costs = np.full((n_people, n_characters), float(PREFERENCE_PENALTY))
 
         for i, person in enumerate(people):
             choices = preferences[person]
@@ -773,12 +769,9 @@ class AdvancedCharacterAssignment:
         best_score = float("inf")
 
         for strategy, result in comparison_results.items():
-            cost = result["total_cost"]
-            percentage = result["satisfaction_percentage"]
-
-            # Calculate a weighted score (lower = better)
-            # Give more weight to satisfaction percentage
-            score = cost * (100 - percentage)
+            # total_cost already penalises unsatisfied people with PREFERENCE_PENALTY,
+            # so it is sufficient as a score on its own (lower = better).
+            score = result["total_cost"]
 
             if score < best_score:
                 best_score = score
