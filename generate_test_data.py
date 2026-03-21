@@ -29,6 +29,18 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Output CSV filename (default: test_data_<timestamp>.csv)",
     )
+    parser.add_argument(
+        "--format",
+        choices=["wide", "long"],
+        default="wide",
+        help="CSV output format (default: wide)",
+    )
+    parser.add_argument(
+        "--delimiter",
+        type=str,
+        default=",",
+        help="CSV delimiter (default: ,)",
+    )
     return parser.parse_args()
 
 
@@ -155,6 +167,11 @@ def main():
     if num_choices <= 0:
         print("⚠️ Error: --choices must be greater than 0")
         sys.exit(1)
+    if num_choices > len(pokemon):
+        print(
+            f"⚠️ Error: --choices ({num_choices}) cannot exceed the number of available characters ({len(pokemon)})"
+        )
+        sys.exit(1)
 
     # Generate all possible combinations of names and surnames
     all_people = [
@@ -170,32 +187,16 @@ def main():
 
     people = random.sample(all_people, num_people)
 
-    # Check if we have enough unique Pokemon for one per person
-    if len(pokemon) < num_people:
-        print(
-            f"⚠️ Error: Not enough unique Pokemon ({len(pokemon)}) for the number of people ({num_people})"
-        )
-        print(
-            "Each person should have at least one unique Pokemon to make the assignment meaningful"
-        )
-        sys.exit(1)
-
-    # Extend pokemon list if needed to cover all choices
-    available_pokemon = list(pokemon)
-    needed = num_people * num_choices
-    copy_index = 1
-    while len(available_pokemon) < needed:
-        copy_index += 1
-        available_pokemon.extend(f"{p} #{copy_index}" for p in pokemon)
-
-    # Generate random data
+    # Generate random choices for each person; different people can share the same
+    # Pokemon — that is intentional, as the assigner is designed to resolve conflicts.
     choice_columns = [f"Choice{i+1}" for i in range(num_choices)]
     data = []
     for person in people:
-        choices = random.sample(available_pokemon, num_choices)
+        choices = random.sample(pokemon, num_choices)
         data.append([person] + choices)
 
-    df = pd.DataFrame(data, columns=["Person"] + choice_columns)
+    # Count unique characters actually present in the generated CSV
+    used_characters = set(choice for row in data for choice in row[1:])
 
     # Determine output filename
     if args.output:
@@ -204,11 +205,20 @@ def main():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         output_file = f"test_data_{timestamp}.csv"
 
-    df.to_csv(output_file, index=False, encoding="utf-8")
+    if args.format == "long":
+        long_rows = [
+            [row[0], choice] for row in data for choice in row[1:]
+        ]
+        df = pd.DataFrame(long_rows, columns=["Person", "Character"])
+    else:
+        df = pd.DataFrame(data, columns=["Person"] + choice_columns)
+
+    df.to_csv(output_file, index=False, sep=args.delimiter, encoding="utf-8")
     print(f"✨ Test file generated: {output_file}")
-    print(f"📊 Number of people: {len(df)}")
-    print(f"🎮 Number of unique characters: {len(pokemon)}")
+    print(f"📊 Number of people: {num_people}")
+    print(f"🎮 Number of unique characters used: {len(used_characters)}")
     print(f"🎯 Choices per person: {num_choices}")
+    print(f"📋 Format: {args.format}")
 
 
 if __name__ == "__main__":
