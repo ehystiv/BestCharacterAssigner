@@ -129,10 +129,7 @@ class CSVHandler:
         try:
             # Create a DataFrame with the assignments
             df = pd.DataFrame(
-                [
-                    (person, character)
-                    for person, character in assignments.items()
-                ],
+                [(person, character) for person, character in assignments.items()],
                 columns=["Person", "Assigned Character"],
             )
 

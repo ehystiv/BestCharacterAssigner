@@ -67,11 +67,11 @@ class AdvancedCharacterAssignment:
         self.all_characters = []
         self.conflict_analysis = None
         self.available_strategies = [
-            "hungarian",      # Classic Hungarian algorithm
-            "balanced",       # Balanced by popularity
+            "hungarian",  # Classic Hungarian algorithm
+            "balanced",  # Balanced by popularity
             "priority_fair",  # Priority to less fortunate
-            "greedy_smart",   # Smart greedy algorithm
-            "hybrid",         # Combination of strategies
+            "greedy_smart",  # Smart greedy algorithm
+            "hybrid",  # Combination of strategies
         ]
 
     def _create_character_pool(self, n_people: int) -> Counter:
@@ -120,9 +120,7 @@ class AdvancedCharacterAssignment:
 
         # Identify conflicts
         n_people = len(self.people_choices)
-        conflict_characters = {
-            c: count for c, count in popularity.items() if count > 1
-        }
+        conflict_characters = {c: count for c, count in popularity.items() if count > 1}
         critical_characters = {
             c: count
             for c, count in popularity.items()
@@ -241,9 +239,7 @@ class AdvancedCharacterAssignment:
                 print(f"   {suggestion}")
             print()
 
-    def expand_preferences(
-        self, method: str = "similarity"
-    ) -> Dict[str, List[str]]:
+    def expand_preferences(self, method: str = "similarity") -> Dict[str, List[str]]:
         """
         Automatically expands preferences to reduce conflicts.
 
@@ -298,9 +294,7 @@ class AdvancedCharacterAssignment:
 
         return expanded_preferences
 
-    def _find_similar_character(
-        self, target_person: str, candidates: Set[str]
-    ) -> str:
+    def _find_similar_character(self, target_person: str, candidates: Set[str]) -> str:
         """Find a character based on people with similar preferences."""
         target_preferences = set(self.people_choices[target_person])
 
@@ -405,8 +399,7 @@ class AdvancedCharacterAssignment:
         people_indices, character_indices = linear_sum_assignment(costs)
 
         return {
-            people[i]: characters[j]
-            for i, j in zip(people_indices, character_indices)
+            people[i]: characters[j] for i, j in zip(people_indices, character_indices)
         }
 
     def _assign_balanced(self, preferences: Dict[str, List[str]]) -> Dict[str, str]:
@@ -493,9 +486,7 @@ class AdvancedCharacterAssignment:
 
         return assignments
 
-    def _assign_greedy_smart(
-        self, preferences: Dict[str, List[str]]
-    ) -> Dict[str, str]:
+    def _assign_greedy_smart(self, preferences: Dict[str, List[str]]) -> Dict[str, str]:
         """Improved version of the greedy algorithm."""
         assignments = {}
         n_people = len(preferences)
@@ -564,9 +555,7 @@ class AdvancedCharacterAssignment:
 
         # Choose the best (lower score = better)
         best = min(results, key=lambda x: x[2])
-        print(
-            f"🎯 Hybrid strategy: used '{best[0]}' (score: {best[2]:.2f})"
-        )
+        print(f"🎯 Hybrid strategy: used '{best[0]}' (score: {best[2]:.2f})")
 
         return best[1]
 
@@ -608,9 +597,7 @@ class AdvancedCharacterAssignment:
                 continue
 
             try:
-                assignment = self.assign_with_strategy(
-                    strategy, expand_prefs=False
-                )
+                assignment = self.assign_with_strategy(strategy, expand_prefs=False)
 
                 # Calculate statistics
                 total_cost = 0
@@ -630,9 +617,7 @@ class AdvancedCharacterAssignment:
                         position = choices.index(character)
                         total_cost += position
                         satisfied_count += 1
-                        details.append(
-                            f"{person}: {character} (pref #{position+1})"
-                        )
+                        details.append(f"{person}: {character} (pref #{position+1})")
                     else:
                         total_cost += PREFERENCE_PENALTY
                         details.append(f"{person}: {character} (NOT preferred)")
@@ -691,9 +676,7 @@ class AdvancedCharacterAssignment:
         print("=== ADVANCED ASSIGNMENT RESULTS ===\n")
 
         if self.conflict_analysis:
-            at_risk = {
-                p["person"] for p in self.conflict_analysis["at_risk_people"]
-            }
+            at_risk = {p["person"] for p in self.conflict_analysis["at_risk_people"]}
         else:
             at_risk = set()
 

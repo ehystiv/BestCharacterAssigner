@@ -232,9 +232,7 @@ def test_assign_with_strategy(populated_assigner, strategy):
 
     # Test validity of assignments
     for person, character in assignment.items():
-        assert (
-            person in populated_assigner.people_choices
-        ), f"Unknown person: {person}"
+        assert person in populated_assigner.people_choices, f"Unknown person: {person}"
         assert (
             character in populated_assigner.all_characters
         ), f"Unknown character '{character}' assigned to '{person}'"
@@ -286,9 +284,7 @@ def test_compare_strategies(populated_assigner):
         # Test assignment result
         assignment = result["assignment"]
         assert len(assignment) == len(populated_assigner.people_choices)
-        assert all(
-            person in populated_assigner.people_choices for person in assignment
-        )
+        assert all(person in populated_assigner.people_choices for person in assignment)
         assert all(
             character in populated_assigner.all_characters
             for character in assignment.values()

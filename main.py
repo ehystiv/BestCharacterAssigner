@@ -78,9 +78,7 @@ def main() -> None:
     )
 
     # Subparser for assignment
-    assign_parser = subparsers.add_parser(
-        "assign", help="Run character assignment"
-    )
+    assign_parser = subparsers.add_parser("assign", help="Run character assignment")
     assign_parser.add_argument("preference_file", help="CSV file with preferences")
     assign_parser.add_argument(
         "--format",

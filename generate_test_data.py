@@ -206,9 +206,7 @@ def main():
         output_file = f"test_data_{timestamp}.csv"
 
     if args.format == "long":
-        long_rows = [
-            [row[0], choice] for row in data for choice in row[1:]
-        ]
+        long_rows = [[row[0], choice] for row in data for choice in row[1:]]
         df = pd.DataFrame(long_rows, columns=["Person", "Character"])
     else:
         df = pd.DataFrame(data, columns=["Person"] + choice_columns)
