@@ -66,7 +66,6 @@ class AdvancedCharacterAssignment:
         self.people_choices = {}
         self.all_characters = []
         self.conflict_analysis = None
-        self.SCIPY_AVAILABLE = SCIPY_AVAILABLE
         self.available_strategies = [
             "hungarian",      # Classic Hungarian algorithm
             "balanced",       # Balanced by popularity
@@ -397,8 +396,8 @@ class AdvancedCharacterAssignment:
             characters.extend(original_characters)
         characters = characters[:n_people]
 
-        # Cost matrix: np.inf means impossible/undesired assignment
-        costs = np.full((n_people, n_people), np.inf)
+        # Cost matrix: PREFERENCE_PENALTY for non-preferred assignments
+        costs = np.full((n_people, n_people), float(PREFERENCE_PENALTY))
 
         for i, person in enumerate(people):
             choices = preferences[person]
@@ -515,12 +514,8 @@ class AdvancedCharacterAssignment:
             return available  # Fewer options = more urgent
 
         # Process in order of urgency
-        while len(assignments) < len(preferences):
-            # Find most urgent person
-            remaining_people = [p for p in preferences.keys() if p not in assignments]
-            if not remaining_people:
-                break
-
+        remaining_people = set(preferences.keys())
+        while remaining_people:
             urgent_person = min(remaining_people, key=calculate_urgency)
             choices = preferences[urgent_person]
 
@@ -540,6 +535,8 @@ class AdvancedCharacterAssignment:
                         assignments[urgent_person] = character
                         availability[character] -= 1
                         break
+
+            remaining_people.discard(urgent_person)
 
         return assignments
 
@@ -591,7 +588,7 @@ class AdvancedCharacterAssignment:
                 total_score += position  # 0 = better
                 satisfied_count += 1
             else:
-                total_score += 10  # Penalty for non-preference
+                total_score += PREFERENCE_PENALTY
 
         # Bonus for high satisfaction percentage
         satisfaction_rate = satisfied_count / len(assignments)
@@ -793,6 +790,9 @@ class AdvancedCharacterAssignment:
         self, assignments: Dict[str, str], best_strategy: str
     ) -> str:
         """Generate a detailed text report of the assignment."""
+        if not self.conflict_analysis:
+            self.analyze_conflicts()
+
         report = []
         report.append("=== CHARACTER ASSIGNMENT REPORT ===")
         report.append(f"Date: {datetime.now().strftime('%d/%m/%Y %H:%M')}")

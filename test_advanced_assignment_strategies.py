@@ -7,7 +7,7 @@ import tempfile
 
 import pytest
 
-from advanced_assignment_strategies import AdvancedCharacterAssignment
+from advanced_assignment_strategies import AdvancedCharacterAssignment, SCIPY_AVAILABLE
 from typing import Dict, List
 
 
@@ -46,6 +46,7 @@ def test_init(empty_assigner):
     assert empty_assigner.conflict_analysis is None
     assert len(empty_assigner.available_strategies) > 0
     assert all(isinstance(s, str) for s in empty_assigner.available_strategies)
+    assert not hasattr(empty_assigner, "SCIPY_AVAILABLE")
 
 
 def test_analyze_conflicts(populated_assigner):
@@ -241,7 +242,7 @@ def test_assign_with_strategy(populated_assigner, strategy):
 
 def test_assign_with_strategy_hungarian(populated_assigner):
     """Test Hungarian strategy only if scipy is available."""
-    if not populated_assigner.SCIPY_AVAILABLE:
+    if not SCIPY_AVAILABLE:
         pytest.skip("scipy not available")
 
     assignment = populated_assigner.assign_with_strategy("hungarian")
@@ -361,3 +362,32 @@ def test_create_character_pool_empty_raises(empty_assigner):
     """Test that creating a pool with no characters raises ValueError."""
     with pytest.raises(ValueError, match="No characters available"):
         empty_assigner._create_character_pool(5)
+
+
+def test_assign_with_more_people_than_characters():
+    """Test assignment when n_people > n_characters (character replication expected)."""
+    assigner = AdvancedCharacterAssignment()
+    # 6 people, only 3 characters -> replication needed
+    assigner.people_choices = {
+        "Alice": ["CharA", "CharB"],
+        "Bob": ["CharB", "CharC"],
+        "Charlie": ["CharC", "CharA"],
+        "David": ["CharA", "CharC"],
+        "Eve": ["CharB", "CharA"],
+        "Frank": ["CharC", "CharB"],
+    }
+    assigner.all_characters = ["CharA", "CharB", "CharC"]
+
+    for strategy in ["balanced", "priority_fair", "greedy_smart"]:
+        assignment = assigner.assign_with_strategy(strategy, expand_prefs=False)
+
+        # All people must be assigned
+        assert len(assignment) == 6, f"{strategy}: expected 6 assignments"
+
+        # All assigned characters must be valid
+        for person, character in assignment.items():
+            assert character in assigner.all_characters, (
+                f"{strategy}: '{character}' is not a valid character"
+            )
+
+        # Characters CAN repeat (replication), uniqueness is NOT required

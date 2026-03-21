@@ -92,8 +92,8 @@ class CSVHandler:
                     "No person with valid preferences found in the CSV file"
                 )
 
-            # Collect all unique characters
-            all_characters = list(
+            # Collect all unique characters (sorted for determinism)
+            all_characters = sorted(
                 set(
                     preference
                     for preferences in people_choices.values()
